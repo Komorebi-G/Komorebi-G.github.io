@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>桥检测算法演示</title>
+  <style>
+    :root{
+      color-scheme:light;
+      --bg:#f2f4f3;--surface:#fff;--surface-2:#e9eeec;--ink:#10201c;--muted:#50605b;
+      --line:#b9c5c0;--primary:#075e54;--primary-2:#d8eee9;--current:#d97706;
+      --bridge:#b42318;--safe:#147d64;--tree:#446b9e;--removed:#7a8581;
+      --radius:12px;--sans:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+      --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px}
+    button,select,input{font:inherit}
+    button,select{min-height:44px}
+    button{cursor:pointer}
+    header{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:18px clamp(18px,3vw,44px);background:var(--ink);color:#fff}
+    h1{margin:0;font-size:clamp(26px,3vw,40px);line-height:1.08;letter-spacing:-.03em}
+    .header-note{max-width:34rem;margin:0;color:#d5dfdc;font-size:15px;line-height:1.45;text-align:right}
+    .toolbar{display:flex;align-items:end;gap:14px;flex-wrap:wrap;padding:14px clamp(18px,3vw,44px);border-bottom:1px solid var(--line);background:var(--surface)}
+    .field{display:grid;gap:5px;min-width:180px}
+    .field label,.section-label{font-size:13px;font-weight:750;color:var(--muted)}
+    select{border:1px solid #81928c;border-radius:8px;background:#fff;color:var(--ink);padding:0 38px 0 12px}
+    .case-note{margin-left:auto;max-width:36rem;color:var(--muted);font-size:14px;line-height:1.4}
+    main{padding:18px clamp(14px,2vw,30px) 110px;max-width:1800px;margin:auto}
+    .single-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.75fr);gap:16px;align-items:stretch}
+    .workspace,.code-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+    .workspace-head,.panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-bottom:1px solid var(--line)}
+    .workspace-head h2,.panel-head h2{font-size:clamp(20px,2vw,28px);margin:0;letter-spacing:-.02em}
+    .status-copy{min-width:0}
+    .status-title{margin:0;font-size:clamp(18px,2vw,25px);font-weight:800;color:var(--ink)}
+    .status-detail{margin:4px 0 0;color:var(--muted);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .step-badge{flex:none;background:var(--primary-2);color:var(--primary);border-radius:999px;padding:8px 12px;font-weight:800;font-variant-numeric:tabular-nums}
+    .graph-wrap{position:relative;min-height:500px;background:#fbfcfb}
+    svg{display:block;width:100%;height:100%;min-height:500px}
+    .edge{stroke:#9aa6a2;stroke-width:4;transition:stroke .16s ease,stroke-width .16s ease,opacity .16s ease}
+    .edge.safe{stroke:var(--safe)}.edge.bridge{stroke:var(--bridge);stroke-width:7}.edge.tree{stroke:var(--tree)}
+    .edge.removed{stroke:var(--removed);stroke-dasharray:10 8;opacity:.28}.edge.active{stroke:var(--current);stroke-width:10;opacity:1}
+    .edge-label{font:700 13px var(--mono);fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:#fbfcfb;stroke-width:6px;stroke-linejoin:round}
+    .node circle{fill:#fff;stroke:var(--ink);stroke-width:3;transition:fill .16s ease,stroke .16s ease}
+    .node text{font:800 17px var(--mono);text-anchor:middle;dominant-baseline:middle;fill:var(--ink)}
+    .node.active circle{fill:#fff0d5;stroke:var(--current);stroke-width:7}
+    .node .value{font:700 12px var(--mono);fill:var(--primary);paint-order:stroke;stroke:#fff;stroke-width:5px}
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}
+    .metric{padding:12px 16px;border-right:1px solid var(--line);min-width:0}
+    .metric:last-child{border-right:0}.metric span{display:block;font-size:12px;color:var(--muted);font-weight:700}
+    .metric strong{display:block;margin-top:3px;font-size:clamp(20px,2vw,30px);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .code-panel{display:flex;flex-direction:column}
+    .algorithm-facts{padding:13px 18px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:14px;color:var(--muted);line-height:1.45}
+    .algorithm-facts b{color:var(--ink)}
+    .code{margin:0;padding:12px 0;list-style:none;counter-reset:line;overflow:auto;flex:1;background:#17231f;color:#dce7e3}
+    .code li{display:grid;grid-template-columns:42px 1fr;gap:12px;padding:10px 18px;font:clamp(14px,1.25vw,18px)/1.5 var(--mono);white-space:pre}
+    .code li::before{counter-increment:line;content:counter(line);color:#82948e;text-align:right}
+    .code li.active{background:#f0a43a;color:#111b18;font-weight:800}
+    .code li.active::before{color:#5a3908}
+    .legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+    .legend i{display:inline-block;width:22px;border-top:5px solid;margin-right:6px;vertical-align:middle}
+    .legend .current{border-color:var(--current)}.legend .bridge{border-color:var(--bridge)}.legend .safe{border-color:var(--safe)}
+    .controls{position:fixed;z-index:20;left:50%;bottom:14px;transform:translateX(-50%);width:min(1120px,calc(100% - 28px));display:grid;grid-template-columns:auto auto auto minmax(160px,1fr) auto;gap:10px;align-items:center;padding:12px;background:#fff;border:1px solid #81928c;border-radius:12px;box-shadow:0 6px 8px #10201c24}
+    .controls button{border:1px solid #81928c;border-radius:8px;background:#fff;color:var(--ink);padding:0 15px;font-weight:750}
+    .controls button.primary{background:var(--primary);border-color:var(--primary);color:#fff;min-width:112px}
+    .controls button:disabled{opacity:.42;cursor:not-allowed}
+    input[type=range]{width:100%;accent-color:var(--primary)}
+    .progress-wrap{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+    .progress-text{font:700 14px var(--mono);min-width:68px;text-align:right}
+    :focus-visible{outline:3px solid #e9a23b;outline-offset:2px}
+    @media(max-width:1050px){
+      .single-layout{grid-template-columns:1fr}.code-panel{min-height:480px}
+      .case-note{width:100%;max-width:none;margin:0}
+      .header-note{display:none}.graph-wrap,svg{min-height:420px}
+    }
+    @media(max-width:680px){
+      body{font-size:16px}.toolbar{align-items:stretch}.field{width:100%}
+      .metrics{grid-template-columns:1fr 1fr}.metric:nth-child(2){border-right:0}.metric:nth-child(-n+2){border-bottom:1px solid var(--line)}
+      .controls{grid-template-columns:1fr 1fr 1fr;bottom:8px}.controls .progress-wrap{grid-column:1/-1;grid-row:1}.controls select{grid-column:1/-1}
+      .status-detail{white-space:normal}.workspace-head{align-items:start}
+    }
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>无向图桥检测 · 算法演示</h1>
+    <p class="header-note">选择算法，逐步观察图状态、核心变量与当前伪代码行。</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="field">
+      <label for="caseSelect">演示样例</label>
+      <select id="caseSelect"></select>
+    </div>
+    <div class="field">
+      <label for="algorithmSelect">算法</label>
+      <select id="algorithmSelect"></select>
+    </div>
+    <div class="case-note" id="caseNote"></div>
+  </div>
+
+  <main>
+    <section class="single-layout">
+      <div class="workspace">
+        <div class="workspace-head">
+          <div class="status-copy">
+            <p id="eventTitle" class="status-title"></p>
+            <p id="eventDetail" class="status-detail"></p>
+          </div>
+          <span id="stepBadge" class="step-badge"></span>
+        </div>
+        <div class="graph-wrap"><svg id="singleGraph" viewBox="0 0 1000 600" role="img" aria-label="无向图算法状态"></svg></div>
+        <div id="singleMetrics" class="metrics"></div>
+      </div>
+      <aside class="code-panel">
+        <div class="panel-head"><h2 id="algorithmTitle"></h2></div>
+        <div id="algorithmFacts" class="algorithm-facts"></div>
+        <ol id="singleCode" class="code"></ol>
+        <div class="legend"><span><i class="current"></i>当前</span><span><i class="bridge"></i>桥</span><span><i class="safe"></i>环内边</span></div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="controls" aria-label="播放控制">
+    <button id="prev" aria-label="上一步">← 单步</button>
+    <button id="play" class="primary">▶ 播放</button>
+    <button id="next" aria-label="下一步">单步 →</button>
+    <div class="progress-wrap"><input id="slider" type="range" min="0" value="0" aria-label="演示进度"><span id="progressText" class="progress-text"></span></div>
+    <select id="speed" aria-label="播放速度"><option value="1800">0.5×</option><option value="1000" selected>1×</option><option value="500">2×</option><option value="250">4×</option></select>
+  </div>
+
+  <script src="trace_data.js"></script>
+  <script>
+  (() => {
+    const LAB = window.BRIDGE_LAB;
+    const state = {caseIndex:0, algorithm:"brute", step:0, timer:null, data:null};
+    const $ = s => document.querySelector(s);
+    const el = {
+      caseSelect:$("#caseSelect"),algorithmSelect:$("#algorithmSelect"),caseNote:$("#caseNote"),
+      eventTitle:$("#eventTitle"),eventDetail:$("#eventDetail"),stepBadge:$("#stepBadge"),singleGraph:$("#singleGraph"),
+      singleMetrics:$("#singleMetrics"),algorithmTitle:$("#algorithmTitle"),algorithmFacts:$("#algorithmFacts"),
+      singleCode:$("#singleCode"),prev:$("#prev"),play:$("#play"),next:$("#next"),
+      slider:$("#slider"),speed:$("#speed"),progressText:$("#progressText")
+    };
+
+    function stop(){
+      clearInterval(state.timer); state.timer=null; el.play.textContent="▶ 播放";
+    }
+    function sample(){ return LAB.cases[state.caseIndex]; }
+    function trace(id=state.algorithm){ return state.data.traces[id]; }
+    function maxStep(){ return trace().length-1; }
+    function graphMarkup(sample, event, compact=false){
+      const edges=sample.edges.map(edge=>{
+        const a=sample.nodes[edge.u], b=sample.nodes[edge.v];
+        const x1=a.x*10,y1=a.y*7.2+20,x2=b.x*10,y2=b.y*7.2+20;
+        const cls=event.edgeState[edge.id]||"neutral";
+        const active=event.activeEdge===edge.id?" active":"";
+        return `<g><line class="edge ${cls}${active}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="edge-label" x="${(x1+x2)/2}" y="${(y1+y2)/2-9}">e${edge.id}</text></g>`;
+      }).join("");
+      const nodes=sample.nodes.map(node=>{
+        const active=event.activeNode===node.id?" active":"";
+        const values=event.values&&event.values[node.id] ? event.values[node.id] : "";
+        return `<g class="node${active}" transform="translate(${node.x*10} ${node.y*7.2+20})"><circle r="${compact?25:31}"/><text y="1">${node.id}</text>${values?`<text class="value" y="${compact?40:48}">${values}</text>`:""}</g>`;
+      }).join("");
+      return edges+nodes;
+    }
+    function metric(label,value){return `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`}
+
+    function renderSingle(){
+      const algorithm=LAB.algorithms[state.algorithm], events=trace(), event=events[state.step];
+      el.eventTitle.textContent=event.title;
+      el.eventDetail.textContent=event.detail;
+      el.stepBadge.textContent=`${state.step+1} / ${events.length}`;
+      el.singleGraph.innerHTML=graphMarkup(sample(),event);
+      el.algorithmTitle.textContent=algorithm.name;
+      el.algorithmFacts.innerHTML=`<b>${algorithm.short} · ${algorithm.complexity}</b><br>${algorithm.state}`;
+      el.singleCode.innerHTML=algorithm.pseudocode.map((line,i)=>`<li class="${i===event.line?"active":""}">${line}</li>`).join("");
+      el.singleMetrics.innerHTML=[
+        metric("当前阶段",event.phase.toUpperCase()),
+        metric("累计邻接检查",event.work),
+        metric("已确认桥",event.bridges),
+        metric(state.algorithm==="online"?"普通连通块":"当前连通块",event.components)
+      ].join("");
+    }
+    function render(){
+      const maximum=maxStep();
+      state.step=Math.max(0,Math.min(state.step,maximum));
+      el.slider.max=maximum; el.slider.value=state.step;
+      el.progressText.textContent=`${state.step+1} / ${maximum+1}`;
+      el.prev.disabled=state.step===0; el.next.disabled=state.step===maximum;
+      renderSingle();
+    }
+    function rebuild(){
+      stop(); state.data=LAB.build(sample()); state.step=0;
+      el.caseNote.textContent=`${sample().note} ${sample().teaching}`;
+      render();
+    }
+    function move(delta){stop();state.step=Math.max(0,Math.min(maxStep(),state.step+delta));render()}
+    function togglePlay(){
+      if(state.timer){stop();return}
+      if(state.step===maxStep()) state.step=0;
+      el.play.textContent="Ⅱ 暂停";
+      state.timer=setInterval(()=>{if(state.step>=maxStep()){stop();return}state.step++;render()},Number(el.speed.value));
+      render();
+    }
+
+    el.caseSelect.innerHTML=LAB.cases.map((c,i)=>`<option value="${i}">${c.name}</option>`).join("");
+    el.algorithmSelect.innerHTML=Object.values(LAB.algorithms).map(a=>`<option value="${a.id}">${a.short}：${a.name}</option>`).join("");
+    el.caseSelect.onchange=()=>{state.caseIndex=Number(el.caseSelect.value);rebuild()};
+    el.algorithmSelect.onchange=()=>{stop();state.algorithm=el.algorithmSelect.value;state.step=0;render()};
+    el.prev.onclick=()=>move(-1);el.next.onclick=()=>move(1);el.play.onclick=togglePlay;
+    el.slider.oninput=()=>{stop();state.step=Number(el.slider.value);render()};
+    el.speed.onchange=()=>{if(state.timer){stop();togglePlay()}};
+    document.addEventListener("keydown",e=>{
+      if(["INPUT","SELECT","BUTTON"].includes(document.activeElement.tagName))return;
+      if(e.key==="ArrowLeft")move(-1);
+      if(e.key==="ArrowRight")move(1);
+      if(e.key===" "){e.preventDefault();togglePlay()}
+    });
+    rebuild();
+  })();
+  </script>
+</body>
+</html>

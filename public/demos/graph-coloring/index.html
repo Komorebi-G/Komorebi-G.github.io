@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>实验三 · 图着色算法对照演示</title>
+<style>
+:root {
+    --bg: #f2f0eb;
+    --surface: #fffefa;
+    --surface-2: #e8e5dd;
+    --ink: #181a1b;
+    --muted: #5e625f;
+    --line: #b9b7b0;
+    --baseline: #b9462f;
+    --optimized: #087b72;
+    --danger: #c6382c;
+    --focus: #155ec4;
+    --c1: #e15b42;
+    --c2: #178c95;
+    --c3: #e1ad2f;
+    --c4: #7157a8;
+    --sans: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+}
+button, select, input { font: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 13px clamp(20px, 3vw, 44px);
+    border-bottom: 1px solid var(--ink);
+    background: var(--surface);
+}
+.brand p {
+    margin: 0 0 5px;
+    color: var(--muted);
+    font: 600 13px/1.2 var(--mono);
+}
+h1 {
+    margin: 0;
+    font-size: 27px;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+}
+.sample-switch {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.sample-switch button {
+    min-height: 42px;
+    padding: 0 15px;
+    border: 1px solid var(--ink);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+}
+.sample-switch button:hover { background: var(--surface-2); }
+.sample-switch button.active {
+    background: var(--ink);
+    color: white;
+}
+main {
+    width: min(1560px, 100%);
+    margin: 0 auto;
+    padding: 14px clamp(16px, 2.4vw, 36px) 24px;
+}
+.brief {
+    display: grid;
+    grid-template-columns: minmax(320px, 1.5fr) repeat(3, minmax(130px, .5fr));
+    border: 1px solid var(--ink);
+    background: var(--surface);
+}
+.brief-copy {
+    padding: 12px 20px;
+    border-right: 1px solid var(--line);
+}
+.brief-copy h2 {
+    margin: 0 0 7px;
+    font-size: 22px;
+    line-height: 1.25;
+}
+.brief-copy p {
+    max-width: 68ch;
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.55;
+}
+.summary {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 70px;
+    padding: 10px 16px;
+    border-right: 1px solid var(--line);
+}
+.summary:last-child { border-right: 0; }
+.summary span {
+    color: var(--muted);
+    font-size: 13px;
+}
+.summary strong {
+    margin-top: 4px;
+    font: 700 24px/1 var(--mono);
+}
+.comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 12px;
+    border: 1px solid var(--ink);
+    background: var(--surface);
+}
+.algorithm {
+    min-width: 0;
+}
+.algorithm + .algorithm { border-left: 1px solid var(--ink); }
+.algorithm-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 72px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--line);
+}
+.algorithm-name {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+}
+.marker {
+    width: 10px;
+    height: 42px;
+    flex: 0 0 auto;
+    border-radius: 3px;
+    background: var(--baseline);
+}
+.optimized .marker { background: var(--optimized); }
+.algorithm h3 {
+    margin: 0 0 4px;
+    font-size: 20px;
+}
+.principle {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.4;
+}
+.step-count {
+    flex: 0 0 auto;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    font: 700 13px/1 var(--mono);
+}
+.graph-wrap {
+    position: relative;
+    min-height: 320px;
+    background:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: -1px -1px;
+}
+svg {
+    display: block;
+    width: 100%;
+    height: 320px;
+}
+.edge {
+    stroke: #9b9d98;
+    stroke-width: 2.5;
+}
+.node { transition: transform 180ms ease-out; }
+.node circle.main {
+    fill: var(--surface);
+    stroke: var(--ink);
+    stroke-width: 3;
+    transition: fill 180ms ease-out, stroke 180ms ease-out;
+}
+.node.active circle.main {
+    stroke: var(--baseline);
+    stroke-width: 7;
+}
+.optimized .node.active circle.main { stroke: var(--optimized); }
+.node.empty circle.main {
+    stroke: var(--danger);
+    stroke-width: 7;
+}
+.node text.label {
+    text-anchor: middle;
+    fill: var(--ink);
+    font: 800 22px/1 var(--mono);
+    pointer-events: none;
+}
+.candidate-bg {
+    fill: var(--surface);
+    stroke: var(--line);
+    stroke-width: 1.5;
+}
+.candidate-dot {
+    stroke: var(--ink);
+    stroke-width: 1;
+}
+.empty-mark {
+    text-anchor: middle;
+    fill: var(--danger);
+    font: 900 18px/1 var(--sans);
+}
+.event {
+    min-height: 96px;
+    padding: 11px 16px 12px;
+    border-top: 1px solid var(--line);
+}
+.event-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+.event-type {
+    padding: 5px 8px;
+    border-radius: 5px;
+    background: var(--ink);
+    color: white;
+    font: 700 12px/1 var(--mono);
+}
+.event h4 {
+    margin: 0;
+    font-size: 17px;
+}
+.event p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--line);
+}
+.metric {
+    padding: 8px 11px;
+    border-right: 1px solid var(--line);
+}
+.metric:last-child { border-right: 0; }
+.metric span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+}
+.metric strong {
+    display: block;
+    margin-top: 3px;
+    font: 700 18px/1.1 var(--mono);
+}
+.narrative {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    margin-top: 12px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: white;
+}
+.chapter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-right: 1px solid #ffffff40;
+    font: 700 16px/1.3 var(--mono);
+}
+.narrative-copy { padding: 11px 18px; }
+.narrative h2 {
+    margin: 0 0 3px;
+    font-size: 18px;
+}
+.narrative p {
+    margin: 0;
+    max-width: 82ch;
+    color: #dededb;
+    font-size: 15px;
+    line-height: 1.5;
+}
+.controls {
+    display: grid;
+    grid-template-columns: auto auto auto minmax(140px, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-top: 9px;
+}
+.controls button, .controls select {
+    height: 44px;
+    padding: 0 15px;
+    border: 1px solid var(--ink);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+}
+.controls button:hover, .controls select:hover { background: var(--surface-2); }
+.controls .play {
+    min-width: 100px;
+    background: var(--ink);
+    color: white;
+}
+.controls input {
+    width: 100%;
+    accent-color: var(--optimized);
+}
+.legend {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 9px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+.legend-items {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.legend-item { display: inline-flex; align-items: center; gap: 7px; }
+.legend-swatch {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    background: var(--surface);
+}
+.legend-swatch.active { border: 4px solid var(--optimized); }
+.legend-swatch.empty { border-color: var(--danger); }
+@media (max-width: 1050px) {
+    .brief { grid-template-columns: 1fr repeat(3, 1fr); }
+    .brief-copy { grid-column: 1 / -1; border-right: 0; border-bottom: 1px solid var(--line); }
+    .comparison { grid-template-columns: 1fr; }
+    .algorithm + .algorithm { border-left: 0; border-top: 1px solid var(--ink); }
+}
+@media (max-width: 680px) {
+    header { align-items: flex-start; flex-direction: column; }
+    .sample-switch { justify-content: flex-start; }
+    .brief { grid-template-columns: 1fr; }
+    .summary { border-right: 0; border-bottom: 1px solid var(--line); }
+    .summary:last-child { border-bottom: 0; }
+    .algorithm-head { flex-direction: column; }
+    .graph-wrap { min-height: 330px; }
+    svg { height: 330px; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .metric:nth-child(2) { border-right: 0; }
+    .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+    .narrative { grid-template-columns: 1fr; }
+    .chapter { justify-content: flex-start; border-right: 0; border-bottom: 1px solid #ffffff40; }
+    .controls { grid-template-columns: 1fr 1fr 1fr; }
+    .controls input { grid-column: 1 / -1; grid-row: 1; }
+    .controls select { grid-column: 1 / -1; }
+    .legend { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+</style>
+</head>
+<body>
+<header>
+    <div class="brand">
+        <p>算法实验 03 · 图着色搜索</p>
+        <h1>关键决策对照演示</h1>
+    </div>
+    <nav id="sampleSwitch" class="sample-switch" aria-label="演示案例"></nav>
+</header>
+<main>
+    <section class="brief" aria-labelledby="sampleTitle">
+        <div class="brief-copy">
+            <h2 id="sampleTitle"></h2>
+            <p id="sampleDescription"></p>
+        </div>
+        <div class="summary"><span>递归调用减少</span><strong id="callSaving"></strong></div>
+        <div class="summary"><span>回溯减少</span><strong id="backtrackSaving"></strong></div>
+        <div class="summary"><span>强制传播</span><strong id="forcedTotal"></strong></div>
+    </section>
+
+    <section class="comparison" aria-label="算法同步对照">
+        <article class="algorithm baseline">
+            <div class="algorithm-head">
+                <div class="algorithm-name">
+                    <span class="marker" aria-hidden="true"></span>
+                    <div><h3 id="leftName"></h3><p id="leftPrinciple" class="principle"></p></div>
+                </div>
+                <span id="leftStep" class="step-count"></span>
+            </div>
+            <div class="graph-wrap"><svg id="leftGraph" viewBox="0 0 1000 600" role="img" aria-label="顺序回溯图状态"></svg></div>
+            <div id="leftEvent" class="event"></div>
+            <div id="leftMetrics" class="metrics"></div>
+        </article>
+        <article class="algorithm optimized">
+            <div class="algorithm-head">
+                <div class="algorithm-name">
+                    <span class="marker" aria-hidden="true"></span>
+                    <div><h3 id="rightName"></h3><p id="rightPrinciple" class="principle"></p></div>
+                </div>
+                <span id="rightStep" class="step-count"></span>
+            </div>
+            <div class="graph-wrap"><svg id="rightGraph" viewBox="0 0 1000 600" role="img" aria-label="MRV 与前向检查图状态"></svg></div>
+            <div id="rightEvent" class="event"></div>
+            <div id="rightMetrics" class="metrics"></div>
+        </article>
+    </section>
+
+    <section class="narrative" aria-live="polite">
+        <div id="chapter" class="chapter"></div>
+        <div class="narrative-copy"><h2 id="frameTitle"></h2><p id="frameDetail"></p></div>
+    </section>
+
+    <div class="controls">
+        <button id="prev" type="button">← 上一步</button>
+        <button id="play" class="play" type="button">▶ 播放</button>
+        <button id="next" type="button">下一步 →</button>
+        <input id="slider" type="range" min="0" aria-label="关键帧">
+        <select id="speed" aria-label="播放速度">
+            <option value="2400">慢速</option>
+            <option value="1500" selected>标准</option>
+            <option value="850">快速</option>
+        </select>
+    </div>
+
+    <div class="legend">
+        <div class="legend-items">
+            <span class="legend-item"><i class="legend-swatch active"></i>当前处理顶点</span>
+            <span class="legend-item"><i class="legend-swatch"></i>未染色顶点</span>
+            <span class="legend-item"><i class="legend-swatch empty"></i>候选域为空</span>
+        </div>
+        <span>节点下方彩色圆点表示当前仍可用的颜色；演示仅保留能解释算法差异的关键帧。</span>
+    </div>
+</main>
+<script src="trace_data.js"></script>
+<script>
+(() => {
+    const D = window.TRACE_DATA;
+    const palette = ["#e15b42", "#178c95", "#e1ad2f", "#7157a8"];
+    const typeNames = {
+        init: "初始化", select: "选择", assign: "赋色",
+        propagate: "前向检查", force: "强制传播",
+        backtrack: "回溯", finish: "结束"
+    };
+    const stories = {
+        ordering_trap: [
+            { left: 0, right: 0, title: "同一起点", detail: "两个算法拥有相同的图、颜色数与初始候选域，差异只来自选点与约束传播策略。" },
+            { left: 1, right: 1, title: "第一次选择就分叉", detail: "顺序回溯从编号最小但约束较弱的 v1 开始；MRV 平手时选择连接 6 个邻点的 v8，先处理最可能制造冲突的核心。" },
+            { left: 15, right: 4, title: "风险被拖到搜索深处", detail: "顺序回溯直到第 8 层才接触核心约束；右侧已通过前向检查持续缩小邻点候选域。" },
+            { left: 58, right: 7, title: "重复分支 vs 连锁确定", detail: "左侧已回溯 15 次，仍在重复尝试颜色组合；右侧候选域收缩触发 3 个单候选点，连续完成强制赋值。" },
+            { left: 213, right: 14, title: "搜索树规模拉开", detail: "优化算法已经完成；顺序回溯经历 70 次撤销后才找到通向解的分支。" },
+            { left: 227, right: 14, title: "相同答案，不同代价", detail: "两者最终都找到合法 3 着色，但 MRV 与前向检查把 79 次递归调用压缩到 6 次。" }
+        ],
+        k4_3: [
+            { left: 0, right: 0, title: "无解案例", detail: "K₄ 中每个顶点都与另外三个顶点相邻，3 种颜色不可能完成着色。" },
+            { left: 2, right: 2, title: "赋色后的信息利用", detail: "左侧只记录 v1 的颜色；右侧立即从三个邻点的候选域中删除该颜色。" },
+            { left: 7, right: 5, title: "候选域归零", detail: "右侧通过传播看到 v4 已无颜色可选，当前分支必然失败；这是前向检查最关键的提前剪枝信号。" },
+            { left: 16, right: 6, title: "更早返回", detail: "顺序回溯需要进入第 4 层后逐级撤销；前向检查在候选域清空时立即恢复本层状态。" },
+            { left: 32, right: 19, title: "系统排除分支", detail: "两个算法都在证明无解，但右侧每次赋色都会同步维护未来可行域，不再盲目向下展开。" },
+            { left: 47, right: 29, title: "完成无解证明", detail: "前向检查减少了递归层数与回溯次数，并清楚展示每个分支失败的直接原因。" }
+        ]
+    };
+    const state = { sample: 0, frame: 0, timer: null };
+    const $ = selector => document.querySelector(selector);
+    const el = {
+        samples: $("#sampleSwitch"), title: $("#sampleTitle"),
+        description: $("#sampleDescription"), callSaving: $("#callSaving"),
+        backtrackSaving: $("#backtrackSaving"), forcedTotal: $("#forcedTotal"),
+        leftName: $("#leftName"), leftPrinciple: $("#leftPrinciple"),
+        rightName: $("#rightName"), rightPrinciple: $("#rightPrinciple"),
+        leftStep: $("#leftStep"), rightStep: $("#rightStep"),
+        leftGraph: $("#leftGraph"), rightGraph: $("#rightGraph"),
+        leftEvent: $("#leftEvent"), rightEvent: $("#rightEvent"),
+        leftMetrics: $("#leftMetrics"), rightMetrics: $("#rightMetrics"),
+        chapter: $("#chapter"), frameTitle: $("#frameTitle"), frameDetail: $("#frameDetail"),
+        prev: $("#prev"), next: $("#next"), play: $("#play"),
+        slider: $("#slider"), speed: $("#speed")
+    };
+    const sample = () => D.samples[state.sample];
+    const algorithms = () => sample().algorithms;
+    const story = () => stories[sample().id];
+    const percentSaving = (before, after) =>
+        before === 0 ? "—" : `${Math.round((before - after) / before * 100)}%`;
+
+    function stop() {
+        clearInterval(state.timer);
+        state.timer = null;
+        el.play.textContent = "▶ 播放";
+    }
+
+    function buildGraph(svg, graph) {
+        const edges = graph.edges.map(([u, v]) => {
+            const a = graph.nodes[u], b = graph.nodes[v];
+            return `<line class="edge" x1="${a.x * 10}" y1="${a.y * 6}" x2="${b.x * 10}" y2="${b.y * 6}"/>`;
+        }).join("");
+        const nodes = graph.nodes.map(n =>
+            `<g class="node" data-id="${n.id}" transform="translate(${n.x * 10} ${n.y * 6})">
+                <circle class="main" r="42"></circle>
+                <text class="label" y="6">v${n.id + 1}</text>
+                <g class="candidates" transform="translate(0 61)"></g>
+            </g>`
+        ).join("");
+        svg.innerHTML = `<g>${edges}</g><g>${nodes}</g>`;
+    }
+
+    function candidateMarkup(mask, k) {
+        const available = [];
+        for (let color = 0; color < k; color++) {
+            if (mask & (1 << color)) available.push(color);
+        }
+        const width = Math.max(34, available.length * 22 + 12);
+        let markup = `<rect class="candidate-bg" x="${-width / 2}" y="-13" width="${width}" height="26" rx="6"></rect>`;
+        if (!available.length) return markup + `<text class="empty-mark" y="6">×</text>`;
+        available.forEach((color, index) => {
+            const x = (index - (available.length - 1) / 2) * 22;
+            markup += `<circle class="candidate-dot" cx="${x}" cy="0" r="7" fill="${palette[color]}"></circle>`;
+        });
+        return markup;
+    }
+
+    function renderGraph(svg, event, graph) {
+        graph.nodes.forEach(node => {
+            const group = svg.querySelector(`[data-id="${node.id}"]`);
+            const color = event.colors[node.id];
+            const mask = event.candidates[node.id];
+            group.classList.toggle("active", event.active === node.id);
+            group.classList.toggle("empty", color < 0 && mask === 0);
+            group.querySelector(".main").style.fill = color >= 0 ? palette[color] : "#fffefa";
+            group.querySelector(".candidates").innerHTML =
+                color >= 0 ? "" : candidateMarkup(mask, graph.k);
+        });
+    }
+
+    function renderEvent(container, event) {
+        container.innerHTML = `
+            <div class="event-top">
+                <span class="event-type">${typeNames[event.type] || event.type}</span>
+                <h4>${event.title}</h4>
+            </div>
+            <p>${event.detail}</p>`;
+    }
+
+    function renderMetrics(container, event) {
+        const rows = [
+            ["递归调用", event.calls],
+            ["约束检查", event.checks],
+            ["回溯", event.backtracks],
+            ["强制传播", event.forced]
+        ];
+        container.innerHTML = rows.map(([label, value]) =>
+            `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`
+        ).join("");
+    }
+
+    function render() {
+        const graph = sample();
+        const [left, right] = algorithms();
+        const frame = story()[state.frame];
+        const leftEvent = left.events[frame.left];
+        const rightEvent = right.events[frame.right];
+        renderGraph(el.leftGraph, leftEvent, graph);
+        renderGraph(el.rightGraph, rightEvent, graph);
+        renderEvent(el.leftEvent, leftEvent);
+        renderEvent(el.rightEvent, rightEvent);
+        renderMetrics(el.leftMetrics, leftEvent);
+        renderMetrics(el.rightMetrics, rightEvent);
+        el.leftStep.textContent = `原始步骤 ${frame.left + 1}/${left.events.length}`;
+        el.rightStep.textContent = `原始步骤 ${frame.right + 1}/${right.events.length}`;
+        el.chapter.textContent = `关键帧 ${state.frame + 1} / ${story().length}`;
+        el.frameTitle.textContent = frame.title;
+        el.frameDetail.textContent = frame.detail;
+        el.slider.max = story().length - 1;
+        el.slider.value = state.frame;
+        el.prev.disabled = state.frame === 0;
+        el.next.disabled = state.frame === story().length - 1;
+    }
+
+    function selectSample(index) {
+        stop();
+        state.sample = index;
+        state.frame = 0;
+        const graph = sample();
+        const [left, right] = algorithms();
+        el.samples.innerHTML = D.samples.map((item, i) =>
+            `<button type="button" class="${i === index ? "active" : ""}" data-index="${i}">${item.title}</button>`
+        ).join("");
+        el.samples.querySelectorAll("button").forEach(button => {
+            button.onclick = () => selectSample(Number(button.dataset.index));
+        });
+        el.title.textContent = graph.title;
+        el.description.textContent = graph.description;
+        el.callSaving.textContent = percentSaving(left.stats.calls, right.stats.calls);
+        el.backtrackSaving.textContent = percentSaving(left.stats.backtracks, right.stats.backtracks);
+        el.forcedTotal.textContent = `${right.stats.forced} 次`;
+        el.leftName.textContent = left.name;
+        el.leftPrinciple.textContent = left.principle;
+        el.rightName.textContent = right.name;
+        el.rightPrinciple.textContent = right.principle;
+        buildGraph(el.leftGraph, graph);
+        buildGraph(el.rightGraph, graph);
+        render();
+    }
+
+    function move(delta) {
+        stop();
+        state.frame = Math.max(0, Math.min(story().length - 1, state.frame + delta));
+        render();
+    }
+
+    el.prev.onclick = () => move(-1);
+    el.next.onclick = () => move(1);
+    el.slider.oninput = () => {
+        stop();
+        state.frame = Number(el.slider.value);
+        render();
+    };
+    el.play.onclick = () => {
+        if (state.timer) {
+            stop();
+            return;
+        }
+        if (state.frame === story().length - 1) state.frame = 0;
+        el.play.textContent = "Ⅱ 暂停";
+        render();
+        state.timer = setInterval(() => {
+            if (state.frame === story().length - 1) {
+                stop();
+                return;
+            }
+            state.frame++;
+            render();
+        }, Number(el.speed.value));
+    };
+    document.addEventListener("keydown", event => {
+        if (event.target.matches("input, select, button")) return;
+        if (event.key === "ArrowLeft") move(-1);
+        if (event.key === "ArrowRight") move(1);
+        if (event.key === " ") {
+            event.preventDefault();
+            el.play.click();
+        }
+    });
+    selectSample(0);
+})();
+</script>
+</body>
+</html>

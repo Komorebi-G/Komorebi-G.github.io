@@ -1,0 +1,106 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+---
+
+<BaseLayout
+  title="LBH 的个人网站"
+  description="LBH 的个人网站，整理课程项目、实验和学习记录。"
+  themeColor="#f7f7f4"
+>
+  <div class="page">
+    <Navbar />
+
+    <main>
+      <section class="intro">
+        <p class="eyebrow">个人网站</p>
+        <h1>你好，我是 LBH。</h1>
+        <p class="summary">
+          这里用来整理课程项目、技术实验和学习过程。内容还在逐步增加，
+          目前可以查看算法设计课程的交互演示。
+        </p>
+      </section>
+
+      <section class="current" aria-labelledby="current-title">
+        <div class="section-heading">
+          <h2 id="current-title">目前的内容</h2>
+          <span>01</span>
+        </div>
+
+        <a class="course-card" href="/algorithms">
+          <div class="card-copy">
+            <span class="card-label">课程项目</span>
+            <h3>算法课程演示</h3>
+            <p>五个算法实验的交互可视化，包含分治、回溯、动态规划、图算法与网络流。</p>
+            <span class="open-link">查看全部演示 <b>→</b></span>
+          </div>
+
+          <div class="card-visual" aria-hidden="true">
+            <svg viewBox="0 0 480 260" role="presentation">
+              <g class="grid-lines">
+                <path d="M40 40H440M40 95H440M40 150H440M40 205H440" />
+                <path d="M80 25V235M160 25V235M240 25V235M320 25V235M400 25V235" />
+              </g>
+              <g class="route">
+                <path d="M80 205L160 150L240 165L320 95L400 40" />
+                <circle cx="80" cy="205" r="5" />
+                <circle cx="160" cy="150" r="5" />
+                <circle cx="240" cy="165" r="5" />
+                <circle cx="320" cy="95" r="5" />
+                <circle class="pulse" cx="400" cy="40" r="7" />
+              </g>
+            </svg>
+            <span>TRACE / STEP 24</span>
+          </div>
+        </a>
+      </section>
+    </main>
+
+    <footer>
+      <span>LBH</span>
+      <span>{new Date().getFullYear()}</span>
+    </footer>
+  </div>
+</BaseLayout>
+
+<style>
+  :global(body) { background: #f7f7f4; color: #222320; }
+  .page { min-height: 100vh; background: #f7f7f4; }
+  main { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+  .intro { max-width: 760px; padding: clamp(96px, 14vw, 170px) 0 clamp(90px, 12vw, 145px); }
+  .eyebrow { margin: 0 0 25px; color: #7b7c75; font-size: 13px; letter-spacing: .08em; }
+  h1 { margin: 0; font-size: clamp(46px, 7vw, 84px); line-height: 1.04; letter-spacing: -.055em; font-weight: 650; }
+  .summary { max-width: 650px; margin: 32px 0 0; color: #60615b; font: 400 clamp(17px, 1.8vw, 21px)/1.8 "Noto Serif SC", serif; text-wrap: pretty; }
+  .current { padding-bottom: 110px; }
+  .section-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 0 18px; border-bottom: 1px solid #d4d4ce; }
+  .section-heading h2 { margin: 0; font-size: 14px; font-weight: 600; }
+  .section-heading span { color: #8a8b84; font: 12px/1 "IBM Plex Mono", monospace; }
+  .course-card { display: grid; grid-template-columns: .9fr 1.1fr; min-height: 340px; margin-top: 30px; color: inherit; background: #fff; border: 1px solid #e1e1dc; border-radius: 18px; overflow: hidden; text-decoration: none; box-shadow: 0 10px 35px rgba(28,30,25,.045); transition: transform .25s ease, box-shadow .25s ease; }
+  .course-card:hover { transform: translateY(-3px); box-shadow: 0 18px 48px rgba(28,30,25,.075); }
+  .card-copy { display: flex; flex-direction: column; align-items: flex-start; padding: 48px; }
+  .card-label { color: #777972; font-size: 12px; }
+  .card-copy h3 { margin: auto 0 14px; font-size: clamp(28px, 3.4vw, 43px); line-height: 1.1; letter-spacing: -.04em; }
+  .card-copy p { max-width: 430px; margin: 0 0 28px; color: #6b6c66; font: 400 15px/1.75 "Noto Serif SC", serif; }
+  .open-link { font-size: 14px; font-weight: 600; }
+  .open-link b { display: inline-block; margin-left: 8px; transition: transform .2s ease; }
+  .course-card:hover .open-link b { transform: translateX(4px); }
+  .card-visual { position: relative; display: grid; place-items: center; min-height: 340px; background: #eef1ec; border-left: 1px solid #e1e1dc; }
+  .card-visual svg { width: min(88%, 520px); height: auto; }
+  .grid-lines { fill: none; stroke: #cfd4cd; stroke-width: 1; }
+  .route { fill: #5f7867; stroke: #5f7867; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .route path { fill: none; stroke-dasharray: 600; animation: draw-route 4.5s ease-in-out infinite alternate; }
+  .pulse { transform-origin: 400px 40px; animation: node-pulse 2s ease-in-out infinite; }
+  .card-visual > span { position: absolute; right: 22px; bottom: 18px; color: #858c84; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .08em; }
+  footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #8b8c85; border-top: 1px solid #deddd8; font-size: 12px; }
+  @keyframes draw-route { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
+  @keyframes node-pulse { 50% { transform: scale(1.45); opacity: .55; } }
+  @media (max-width: 760px) {
+    main, footer { width: min(100% - 32px, 1120px); }
+    .intro { padding: 88px 0 86px; }
+    .summary { margin-top: 24px; font-size: 16px; }
+    .current { padding-bottom: 72px; }
+    .course-card { grid-template-columns: 1fr; }
+    .card-copy { min-height: 300px; padding: 30px; }
+    .card-visual { min-height: 230px; border-top: 1px solid #e1e1dc; border-left: 0; }
+  }
+</style>

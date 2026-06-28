@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>最近点对分治算法可视化</title>
+<style>
+    :root {
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.78);
+        --panel-strong: rgba(15, 23, 42, 0.92);
+        --border: rgba(148, 163, 184, 0.22);
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --blue: #38bdf8;
+        --cyan: #22d3ee;
+        --green: #34d399;
+        --orange: #f59e0b;
+        --red: #fb7185;
+        --purple: #a78bfa;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background: var(--bg);
+        overflow-x: hidden;
+    }
+
+    .shell {
+        width: min(1440px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 28px 0 32px;
+    }
+
+    .hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 20px;
+    }
+
+    .title-block h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .title-block p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #bae6fd;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 18px;
+    }
+
+    .card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.035));
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        border: 1px solid var(--border);
+    }
+
+    .stage-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 720px;
+    }
+
+    .stage-header {
+        position: absolute;
+        z-index: 10;
+        left: 18px;
+        top: 18px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        max-width: calc(100% - 36px);
+    }
+
+    .pill {
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(15, 23, 42, 0.72);
+        color: var(--text);
+        font-size: 13px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+    }
+
+    .pill strong {
+        color: #fff;
+    }
+
+    canvas {
+        width: 100%;
+        height: 720px;
+        display: block;
+        border-radius: 20px;
+        background: #020617;
+    }
+
+    .side {
+        display: grid;
+        gap: 18px;
+        align-content: start;
+    }
+
+    .panel {
+        padding: 14px;
+    }
+
+    .panel h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+    }
+
+    .file-box {
+        border: 1px dashed rgba(125, 211, 252, 0.45);
+        border-radius: 22px;
+        padding: 18px;
+        background: rgba(14, 165, 233, 0.08);
+        text-align: center;
+    }
+
+    .file-box input {
+        width: 100%;
+        color: var(--muted);
+    }
+
+    .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.65;
+        margin-top: 10px;
+    }
+
+    .controls {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    button, select {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    button:hover, select:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.13);
+        border-color: rgba(125, 211, 252, 0.45);
+    }
+
+    button.primary {
+        background: var(--blue);
+        color: #000;
+        font-weight: 600;
+    }
+
+    button.danger {
+        color: #fecdd3;
+    }
+
+    select {
+        width: 100%;
+        background-color: rgba(15, 23, 42, 0.96);
+    }
+
+    .progress-wrap {
+        margin-top: 16px;
+    }
+
+    input[type="range"] {
+        width: 100%;
+        accent-color: var(--blue);
+    }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .stat {
+        padding: 14px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--border);
+    }
+
+    .stat .label {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .stat .value {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .legend {
+        display: grid;
+        gap: 6px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.03);
+    }
+
+    .legend-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        display: inline-block;
+    }
+
+    .line-sample {
+        width: 28px;
+        height: 3px;
+        border-radius: 999px;
+        display: inline-block;
+    }
+
+    .event-log {
+        height: 160px;
+        overflow: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .log-line {
+        padding: 4px 6px;
+        margin-bottom: 4px;
+        border-radius: 6px;
+        background: transparent;
+    }
+
+    .empty {
+        display: grid;
+        place-items: center;
+        height: 720px;
+        color: var(--muted);
+        text-align: center;
+        padding: 40px;
+    }
+
+    .kbd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid var(--border);
+        color: #e0f2fe;
+    }
+
+    @media (max-width: 1100px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+        .side {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 760px) {
+        .shell {
+            width: min(100vw - 20px, 1440px);
+            padding-top: 16px;
+        }
+        .hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+        .side {
+            grid-template-columns: 1fr;
+        }
+        canvas, .empty {
+            height: 560px;
+        }
+        .stage-card {
+            min-height: 560px;
+        }
+    }
+</style>
+</head>
+<body>
+<div class="shell">
+    <header class="hero">
+        <div class="title-block">
+            <h1>最近点对分治算法可视化</h1>
+            <p>基于 trace.jsonl 回放递归分割、strip 候选区域、点对比较与当前最优解。适合实验报告展示算法执行过程。</p>
+        </div>
+        <div class="badge">Canvas WebUI · 支持暂停 / 回退 / 倍速</div>
+    </header>
+
+    <main class="layout">
+        <section class="card stage-card">
+            <div class="stage-header">
+                <div class="pill">状态：<strong id="stateText">等待导入</strong></div>
+                <div class="pill">步骤：<strong id="stepText">0 / 0</strong></div>
+                <div class="pill">事件：<strong id="eventText">-</strong></div>
+            </div>
+            <canvas id="canvas"></canvas>
+        </section>
+
+        <aside class="side">
+            <section class="card panel">
+                <h2>导入数据</h2>
+                <div class="file-box">
+                    <input type="file" id="fileInput" accept=".jsonl,.txt,.json" />
+                    <div class="hint">选择 C++ 生成的 <b>trace.jsonl</b>。建议可视化点数 N=50~300。</div>
+                </div>
+            </section>
+
+            <section class="card panel">
+                <h2>播放控制</h2>
+                <div class="controls">
+                    <button class="primary" id="playBtn">播放</button>
+                    <button id="pauseBtn">暂停</button>
+                    <button class="danger" id="resetBtn">重置</button>
+                    <button id="prevBtn">上一步</button>
+                    <button id="nextBtn">下一步</button>
+                    <button id="prevPhaseBtn">上一阶段</button>
+                    <button id="nextPhaseBtn">下一阶段</button>
+                    <select id="speedSelect">
+                        <option value="1200">0.5x</option>
+                        <option value="650" selected>1x</option>
+                        <option value="320">2x</option>
+                        <option value="120">5x</option>
+                        <option value="45">10x</option>
+                        <option value="12">极速</option>
+                    </select>
+                </div>
+                <div class="progress-wrap">
+                    <input type="range" id="progress" min="0" max="0" value="0" step="1" />
+                    <div class="hint">快捷键：<span class="kbd">Space</span> 播放/暂停，<span class="kbd">←</span>/<span class="kbd">→</span> 单步，<span class="kbd">N</span>/<span class="kbd">B</span> 阶段跳转。</div>
+                </div>
+            </section>
+
+            <section class="card panel">
+                <h2>统计信息</h2>
+                <div class="stats">
+                    <div class="stat"><div class="label">点数量</div><div class="value" id="pointCount">0</div></div>
+                    <div class="stat"><div class="label">比较次数</div><div class="value" id="checkCount">0</div></div>
+                    <div class="stat"><div class="label">分割次数</div><div class="value" id="divideCount">0</div></div>
+                    <div class="stat"><div class="label">最短距离</div><div class="value" id="bestDist">-</div></div>
+                </div>
+            </section>
+
+            <section class="card panel">
+                <h2>图例</h2>
+                <div class="legend">
+                    <div class="legend-item"><span class="legend-left"><span class="dot" style="background:#e5e7eb"></span>普通点</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="dot" style="background:#38bdf8"></span>左子问题点</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="dot" style="background:#a78bfa"></span>右子问题点</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="dot" style="background:#facc15"></span>≤3 暴力子集点</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="line-sample" style="background:#34d399"></span>分割线</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="line-sample" style="background:#38bdf8"></span>strip 候选区域</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="dot" style="background:#22d3ee"></span>strip 内候选点</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="line-sample" style="background:#f59e0b"></span>当前比较点对</span></div>
+                    <div class="legend-item"><span class="legend-left"><span class="line-sample" style="background:#fb7185"></span>当前最近点对</span></div>
+                </div>
+            </section>
+
+            <section class="card panel">
+                <h2>事件日志</h2>
+                <div class="event-log" id="eventLog"></div>
+            </section>
+        </aside>
+    </main>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const fileInput = document.getElementById("fileInput");
+const playBtn = document.getElementById("playBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const resetBtn = document.getElementById("resetBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const prevPhaseBtn = document.getElementById("prevPhaseBtn");
+const nextPhaseBtn = document.getElementById("nextPhaseBtn");
+const speedSelect = document.getElementById("speedSelect");
+const progress = document.getElementById("progress");
+
+const stateText = document.getElementById("stateText");
+const stepText = document.getElementById("stepText");
+const eventText = document.getElementById("eventText");
+const pointCountText = document.getElementById("pointCount");
+const checkCountText = document.getElementById("checkCount");
+const divideCountText = document.getElementById("divideCount");
+const bestDistText = document.getElementById("bestDist");
+const eventLog = document.getElementById("eventLog");
+
+let events = [];
+let current = 0;
+let timer = null;
+
+let points = [];
+let currentDivideX = null;
+let currentLeftPoints = [];
+let currentRightPoints = [];
+let currentBasePoints = [];
+let currentMode = "init";
+let currentStrip = null;
+let currentCheck = null;
+let bestPair = null;
+let bestHistory = [];
+let checkCount = 0;
+let divideCount = 0;
+let recentLogs = [];
+
+let bounds = { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+let hoverPulse = 0;
+
+function fitCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+}
+
+window.addEventListener("resize", fitCanvas);
+requestAnimationFrame(function tick() {
+    hoverPulse += 0.035;
+    draw();
+    requestAnimationFrame(tick);
+});
+
+fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    loadTrace(text);
+});
+
+function loadTrace(text) {
+    pause();
+    try {
+        events = text
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean)
+            .map(line => JSON.parse(line));
+    } catch (err) {
+        alert("trace 文件解析失败，请检查是否每行都是完整 JSON。\n" + err.message);
+        return;
+    }
+
+    current = 0;
+    progress.max = events.length;
+    progress.value = 0;
+    rebuildState(0);
+    stateText.textContent = "已导入";
+    updateUI();
+    draw();
+}
+
+function resetState() {
+    points = [];
+    currentDivideX = null;
+    currentLeftPoints = [];
+    currentRightPoints = [];
+    currentBasePoints = [];
+    currentMode = "init";
+    currentStrip = null;
+    currentCheck = null;
+    bestPair = null;
+    bestHistory = [];
+    checkCount = 0;
+    divideCount = 0;
+    recentLogs = [];
+}
+
+function rebuildState(step) {
+    resetState();
+    for (let i = 0; i < step && i < events.length; i++) applyEvent(events[i], false);
+    updateUI();
+}
+
+function applyEvent(ev, pushLog = true) {
+    eventText.textContent = ev.type;
+
+    if (ev.type === "init") {
+        points = ev.points || [];
+        computeBounds();
+        addLog(`init: ${points.length} points`, pushLog);
+    } else if (ev.type === "divide") {
+        currentMode = "divide";
+        currentDivideX = ev.x;
+        divideCount++;
+        currentLeftPoints = ev.left || [];
+        currentRightPoints = ev.right || [];
+        currentBasePoints = [];
+        currentStrip = null;
+        currentCheck = null;
+        addLog(`阶段1-递归划分: x = ${formatNum(ev.x)}, left=${currentLeftPoints.length}, right=${currentRightPoints.length}`, pushLog);
+    } else if (ev.type === "base") {
+        currentMode = "base";
+        currentBasePoints = ev.points || [];
+        currentLeftPoints = [];
+        currentRightPoints = [];
+        currentStrip = null;
+        currentCheck = null;
+        addLog(`阶段2-小规模暴力求解: 当前子集 ${currentBasePoints.length} 个点`, pushLog);
+    } else if (ev.type === "strip") {
+        currentMode = "strip";
+        currentStrip = { mid: ev.mid, d: ev.d, points: ev.points || [] };
+        currentBasePoints = [];
+        currentCheck = null;
+        addLog(`阶段3-构造条带: mid=${formatNum(ev.mid)}, d=${formatNum(ev.d)}, 候选点=${currentStrip.points.length}`, pushLog);
+    } else if (ev.type === "check") {
+        if (currentMode !== "base") currentMode = "compare";
+        currentCheck = { p1: ev.p1, p2: ev.p2 };
+        checkCount++;
+        const label = currentMode === "base" ? "阶段2-暴力比较" : "阶段4-条带比较";
+        addLog(`${label}: (${formatNum(ev.p1[0])}, ${formatNum(ev.p1[1])}) ↔ (${formatNum(ev.p2[0])}, ${formatNum(ev.p2[1])})`, pushLog);
+    } else if (ev.type === "best") {
+        if (currentMode === "strip") currentMode = "compare";
+        bestPair = { p1: ev.p1, p2: ev.p2, dist: ev.dist };
+        bestHistory.push(bestPair);
+        if (bestHistory.length > 10) bestHistory.shift();
+        addLog(`best: dist = ${formatNum(ev.dist)}`, pushLog);
+    } else if (ev.type === "done") {
+        stateText.textContent = "完成";
+        addLog("done: algorithm finished", pushLog);
+    }
+}
+
+function addLog(text, push = true) {
+    if (!push) return;
+    recentLogs.unshift(text);
+    recentLogs = recentLogs.slice(0, 12);
+    renderLog();
+}
+
+function renderLog() {
+    eventLog.innerHTML = recentLogs.map(line => `<div class="log-line">${escapeHtml(line)}</div>`).join("");
+}
+
+function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+}
+
+function computeBounds() {
+    if (!points.length) return;
+    const xs = points.map(p => p[0]);
+    const ys = points.map(p => p[1]);
+    let minX = Math.min(...xs), maxX = Math.max(...xs);
+    let minY = Math.min(...ys), maxY = Math.max(...ys);
+    const padX = Math.max((maxX - minX) * 0.08, 1);
+    const padY = Math.max((maxY - minY) * 0.08, 1);
+    bounds = { minX: minX - padX, maxX: maxX + padX, minY: minY - padY, maxY: maxY + padY };
+}
+
+function sx(x) {
+    const w = canvas.getBoundingClientRect().width;
+    return (x - bounds.minX) / (bounds.maxX - bounds.minX) * w;
+}
+
+function sy(y) {
+    const h = canvas.getBoundingClientRect().height;
+    return h - (y - bounds.minY) / (bounds.maxY - bounds.minY) * h;
+}
+
+function draw() {
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    if (!w || !h) return;
+
+    ctx.clearRect(0, 0, w, h);
+
+    drawBackdrop(w, h);
+
+    if (!events.length) {
+        drawEmpty(w, h);
+        return;
+    }
+
+    drawPoints();
+    drawStrip(w, h);
+    drawCurrentDivideLine(w, h);
+    drawDividePointGroups();
+    drawBasePoints();
+    drawStripPoints();
+    drawBestHistory();
+    drawCurrentCheck();
+    drawBestPair();
+    drawOverlayText(w, h);
+}
+
+function drawBackdrop(w, h) {
+    ctx.save();
+    const grad = ctx.createRadialGradient(w * 0.52, h * 0.45, 80, w * 0.52, h * 0.45, Math.max(w, h));
+    grad.addColorStop(0, "rgba(30, 41, 59, 0.25)");
+    grad.addColorStop(1, "rgba(2, 6, 23, 0.10)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+}
+
+function drawEmpty(w, h) {
+    ctx.save();
+    ctx.fillStyle = "rgba(226, 232, 240, 0.85)";
+    ctx.font = "700 28px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("导入 trace.jsonl 开始可视化", w / 2, h / 2 - 10);
+    ctx.fillStyle = "rgba(148, 163, 184, 0.9)";
+    ctx.font = "15px Inter, sans-serif";
+    ctx.fillText("展示分治线、strip 区域、比较点对和当前最近点对", w / 2, h / 2 + 26);
+    ctx.restore();
+}
+
+function drawPoints() {
+    if (!points || !points.length) return;
+
+    for (const p of points) {
+        const x = sx(p[0]);
+        const y = sy(p[1]);
+        ctx.save();
+        ctx.fillStyle = "rgba(226, 232, 240, 0.82)";
+        ctx.beginPath();
+        ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+
+
+function drawCurrentDivideLine(w, h) {
+    if (currentDivideX === null || currentDivideX === undefined) return;
+    const xx = sx(currentDivideX);
+    ctx.save();
+    ctx.strokeStyle = "rgba(52, 211, 153, 0.9)";
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(xx, 0);
+    ctx.lineTo(xx, h);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
+    ctx.strokeStyle = "rgba(52, 211, 153, 0.35)";
+    roundRect(ctx, Math.min(xx + 10, w - 145), 64, 132, 32, 10);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(209, 250, 229, 0.96)";
+    ctx.font = "13px Inter, sans-serif";
+    ctx.fillText("当前分割线", Math.min(xx + 24, w - 130), 85);
+    ctx.restore();
+}
+
+function drawGlowPoint(p, color, radius, blur) {
+    if (!p || p.length < 2) return;
+    const x = sx(p[0]);
+    const y = sy(p[1]);
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blur;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(1.8, radius * 0.32), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawStrip(w, h) {
+    if (!currentStrip) return;
+    const left = sx(currentStrip.mid - currentStrip.d);
+    const right = sx(currentStrip.mid + currentStrip.d);
+    const grd = ctx.createLinearGradient(left, 0, right, 0);
+    grd.addColorStop(0, "rgba(56, 189, 248, 0.02)");
+    grd.addColorStop(0.5, "rgba(56, 189, 248, 0.24)");
+    grd.addColorStop(1, "rgba(56, 189, 248, 0.02)");
+    ctx.fillStyle = grd;
+    ctx.fillRect(left, 0, right - left, h);
+
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.55)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(left, 0);
+    ctx.lineTo(left, h);
+    ctx.moveTo(right, 0);
+    ctx.lineTo(right, h);
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function drawStripPoints() {
+    if (!currentStrip || !currentStrip.points || !currentStrip.points.length) return;
+    const pulse = 0.75 + Math.sin(hoverPulse * 3.5) * 0.18;
+    for (const p of currentStrip.points) {
+        drawGlowPoint(p, `rgba(34, 211, 238, ${pulse})`, 7.2, 18);
+    }
+}
+
+function drawDividePointGroups() {
+    if (currentLeftPoints && currentLeftPoints.length) {
+        for (const p of currentLeftPoints) {
+            drawGlowPoint(p, "rgba(56, 189, 248, 0.52)", 4.8, 5);
+        }
+    }
+    if (currentRightPoints && currentRightPoints.length) {
+        for (const p of currentRightPoints) {
+            drawGlowPoint(p, "rgba(167, 139, 250, 0.52)", 4.8, 5);
+        }
+    }
+}
+
+function drawBasePoints() {
+    if (!currentBasePoints || !currentBasePoints.length) return;
+    for (const p of currentBasePoints) {
+        drawGlowPoint(p, "rgba(250, 204, 21, 0.78)", 6.2, 8);
+    }
+}
+
+function drawCurrentCheck() {
+    if (!currentCheck) return;
+    const glow = 0.55 + Math.sin(hoverPulse * 3) * 0.2;
+    drawLine(currentCheck.p1, currentCheck.p2, `rgba(245, 158, 11, ${glow})`, 3.2, true);
+    drawHalo(currentCheck.p1, "rgba(245, 158, 11, 0.75)", 8);
+    drawHalo(currentCheck.p2, "rgba(245, 158, 11, 0.75)", 8);
+}
+
+function drawBestHistory() {
+    bestHistory.forEach((pair, idx) => {
+        const alpha = (idx + 1) / bestHistory.length * 0.22;
+        drawLine(pair.p1, pair.p2, `rgba(251, 113, 133, ${alpha})`, 2, false);
+    });
+}
+
+function drawBestPair() {
+    if (!bestPair) return;
+    drawLine(bestPair.p1, bestPair.p2, "rgba(251, 113, 133, 0.95)", 5, true);
+    drawHalo(bestPair.p1, "rgba(251, 113, 133, 0.95)", 11);
+    drawHalo(bestPair.p2, "rgba(251, 113, 133, 0.95)", 11);
+}
+
+function drawLine(p1, p2, color, width, shadow) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    if (shadow) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 14;
+    }
+    ctx.beginPath();
+    ctx.moveTo(sx(p1[0]), sy(p1[1]));
+    ctx.lineTo(sx(p2[0]), sy(p2[1]));
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawHalo(p, color, radius) {
+    const x = sx(p[0]), y = sy(p[1]);
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawOverlayText(w, h) {
+    if (!currentStrip && !bestPair && currentDivideX === null && !currentBasePoints.length) return;
+    ctx.save();
+    ctx.fillStyle = "rgba(15, 23, 42, 0.72)";
+    ctx.strokeStyle = "rgba(148, 163, 184, 0.18)";
+    roundRect(ctx, 18, h - 94, 360, 70, 18);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(226,232,240,0.96)";
+    ctx.font = "700 15px Inter, sans-serif";
+    ctx.fillText(getPhaseTitle(), 36, h - 62);
+    ctx.fillStyle = "rgba(148,163,184,0.95)";
+    ctx.font = "13px Inter, sans-serif";
+    ctx.fillText(getPhaseInfo(), 36, h - 36);
+    ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function nextStep() {
+    if (!events.length || current >= events.length) return;
+    applyEvent(events[current], true);
+    current++;
+    updateUI();
+}
+
+function phaseOf(ev) {
+    if (!ev) return "none";
+    if (ev.type === "divide") return "divide";
+    if (ev.type === "base") return "base";
+    if (ev.type === "strip") return "strip";
+    if (ev.type === "check" || ev.type === "best") return currentMode === "base" ? "base" : "compare";
+    if (ev.type === "done") return "done";
+    return "other";
+}
+
+function phaseName(phase) {
+    if (phase === "divide") return "1. 递归划分左右子问题";
+    if (phase === "base") return "2. 小规模子集暴力求解";
+    if (phase === "strip") return "3. 构造中间条带";
+    if (phase === "compare") return "4. 遍历条带并比较";
+    if (phase === "done") return "完成";
+    return "初始化";
+}
+
+function nextPhase() {
+    if (!events.length || current >= events.length) return;
+    pause();
+    const now = phaseOf(events[Math.max(0, current - 1)]);
+    let i = current;
+    while (i < events.length && phaseOf(events[i]) === now) i++;
+    if (i >= events.length) i = events.length - 1;
+    current = i + 1;
+    rebuildState(current);
+    addLog(`跳转到下一阶段: ${phaseName(phaseOf(events[i]))}`, true);
+}
+
+function prevPhase() {
+    if (!events.length || current <= 1) return;
+    pause();
+    let i = current - 2;
+    const now = phaseOf(events[i]);
+    while (i > 0 && phaseOf(events[i - 1]) === now) i--;
+    i--;
+    if (i < 0) i = 0;
+    const targetPhase = phaseOf(events[i]);
+    while (i > 0 && phaseOf(events[i - 1]) === targetPhase) i--;
+    current = i + 1;
+    rebuildState(current);
+    addLog(`跳转到上一阶段: ${phaseName(targetPhase)}`, true);
+}
+
+function getPhaseTitle() {
+    const ev = events[Math.max(0, current - 1)];
+    return phaseName(phaseOf(ev));
+}
+
+function getPhaseInfo() {
+    const ev = events[Math.max(0, current - 1)];
+    const phase = phaseOf(ev);
+    if (phase === "divide") return `继续递归：左子问题 ${currentLeftPoints.length} 个点，右子问题 ${currentRightPoints.length} 个点`;
+    if (phase === "base") return `当前子集点数 ≤ 3，直接枚举 ${currentBasePoints.length} 个点内的所有点对`;
+    if (phase === "strip") return currentStrip ? `条带宽度 2d = ${formatNum(currentStrip.d * 2)}，候选点 ${currentStrip.points ? currentStrip.points.length : 0} 个` : "正在构造条带";
+    if (phase === "compare") return currentCheck ? "正在比较条带内纵坐标相近的候选点对" : "当前最优点对已更新";
+    if (bestPair) return `当前最短距离 ${formatNum(bestPair.dist)}`;
+    return "等待开始";
+}
+
+function prevStep() {
+    if (current <= 0) return;
+    current--;
+    rebuildState(current);
+}
+
+function play() {
+    if (!events.length) return;
+    pause();
+    stateText.textContent = "播放中";
+    timer = setInterval(() => {
+        if (current >= events.length) {
+            pause();
+            stateText.textContent = "完成";
+            return;
+        }
+        nextStep();
+    }, Number(speedSelect.value));
+}
+
+function pause() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    if (events.length && current < events.length) stateText.textContent = "已暂停";
+}
+
+function reset() {
+    pause();
+    current = 0;
+    rebuildState(0);
+    stateText.textContent = events.length ? "已重置" : "等待导入";
+}
+
+function updateUI() {
+    progress.value = current;
+    stepText.textContent = `${current} / ${events.length}`;
+    pointCountText.textContent = points.length;
+    checkCountText.textContent = checkCount;
+    divideCountText.textContent = divideCount;
+    bestDistText.textContent = bestPair ? formatNum(bestPair.dist) : "-";
+}
+
+function formatNum(x) {
+    if (x === undefined || x === null || Number.isNaN(x)) return "-";
+    if (Math.abs(x) >= 10000) return Number(x).toFixed(1);
+    if (Math.abs(x) >= 100) return Number(x).toFixed(2);
+    return Number(x).toFixed(4);
+}
+
+playBtn.addEventListener("click", play);
+pauseBtn.addEventListener("click", pause);
+resetBtn.addEventListener("click", reset);
+prevBtn.addEventListener("click", prevStep);
+nextBtn.addEventListener("click", nextStep);
+prevPhaseBtn.addEventListener("click", prevPhase);
+nextPhaseBtn.addEventListener("click", nextPhase);
+
+progress.addEventListener("input", () => {
+    pause();
+    current = Number(progress.value);
+    rebuildState(current);
+});
+
+speedSelect.addEventListener("change", () => {
+    if (timer) play();
+});
+
+document.addEventListener("keydown", (e) => {
+    if (e.target && ["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
+    if (e.code === "Space") {
+        e.preventDefault();
+        timer ? pause() : play();
+    } else if (e.code === "ArrowRight") {
+        nextStep();
+    } else if (e.code === "ArrowLeft") {
+        prevStep();
+    } else if (e.code === "KeyN") {
+        nextPhase();
+    } else if (e.code === "KeyB") {
+        prevPhase();
+    }
+});
+
+fitCanvas();
+</script>
+</body>
+</html>

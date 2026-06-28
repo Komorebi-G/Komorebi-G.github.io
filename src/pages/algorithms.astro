@@ -1,0 +1,78 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import { demos } from "../data/demos";
+---
+
+<BaseLayout
+  title="算法课程演示 — LBH"
+  description="算法设计课程的五个交互式实验演示。"
+  themeColor="#f7f7f4"
+>
+  <div class="page">
+    <Navbar />
+    <main>
+      <header class="page-header">
+        <a href="/" class="back">← 返回首页</a>
+        <h1>算法课程演示</h1>
+        <p>将算法的执行轨迹做成可暂停、回放和比较的交互页面。</p>
+      </header>
+
+      <section class="demo-list" aria-label="课程演示列表">
+        {demos.map((demo) => (
+          <a class="demo" href={demo.href}>
+            <span class="index">{demo.index}</span>
+            <span class="name">
+              <strong>{demo.title}</strong>
+              <small>{demo.english}</small>
+            </span>
+            <span class="description">{demo.description}</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        ))}
+      </section>
+
+      <aside class="source-note">
+        <strong>数据来源</strong>
+        <p>演示文件同步自 <code>~/lesson/Algorithm/</code>。实验 2 使用 HTML + JSONL；实验 3–6 使用 HTML + 内嵌轨迹数据的 JavaScript 文件。</p>
+      </aside>
+    </main>
+
+    <footer><span>Algorithm Design & Analysis</span><span>5 demonstrations</span></footer>
+  </div>
+</BaseLayout>
+
+<style>
+  :global(body) { background: #f7f7f4; color: #222320; }
+  .page { min-height: 100vh; }
+  main { width: min(960px, calc(100% - 48px)); margin: 0 auto; padding: 86px 0 120px; }
+  .page-header { max-width: 700px; margin-bottom: 80px; }
+  .back { display: inline-block; margin-bottom: 48px; color: #777871; font-size: 13px; text-decoration: none; }
+  .back:hover { color: #222320; }
+  h1 { margin: 0; font-size: clamp(42px, 6.4vw, 68px); line-height: 1.1; letter-spacing: -.05em; font-weight: 650; }
+  .page-header p { margin: 24px 0 0; color: #686962; font: 400 17px/1.8 "Noto Serif SC", serif; }
+  .demo-list { border-top: 1px solid #cfcfc9; }
+  .demo { display: grid; grid-template-columns: 44px minmax(180px,.8fr) 1.2fr 24px; gap: 22px; align-items: center; min-height: 132px; padding: 25px 8px; color: inherit; border-bottom: 1px solid #d9d9d3; text-decoration: none; transition: background .2s ease, padding .2s ease; }
+  .demo:hover { padding-inline: 18px; background: #efefea; }
+  .index { align-self: start; padding-top: 5px; color: #94958e; font: 11px/1 "IBM Plex Mono", monospace; }
+  .name { display: flex; flex-direction: column; gap: 7px; }
+  .name strong { font-size: 25px; line-height: 1.1; letter-spacing: -.03em; }
+  .name small { color: #85867f; font: 11px/1 "IBM Plex Mono", monospace; }
+  .description { color: #686962; font: 400 14px/1.75 "Noto Serif SC", serif; }
+  .arrow { font-size: 19px; transition: transform .2s ease; }
+  .demo:hover .arrow { transform: translateX(4px); }
+  .source-note { margin-top: 64px; padding: 24px 26px; color: #666760; background: #efefea; border-radius: 10px; }
+  .source-note strong { color: #33342f; font-size: 13px; }
+  .source-note p { margin: 8px 0 0; font-size: 13px; line-height: 1.75; }
+  code { font-family: "IBM Plex Mono", monospace; font-size: .92em; }
+  footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #8b8c85; border-top: 1px solid #deddd8; font-size: 12px; }
+  @media (max-width: 700px) {
+    main, footer { width: min(100% - 32px, 960px); }
+    main { padding: 60px 0 80px; }
+    .page-header { margin-bottom: 56px; }
+    .back { margin-bottom: 36px; }
+    .demo { grid-template-columns: 32px 1fr 24px; min-height: 112px; gap: 12px; }
+    .description { display: none; }
+    .name strong { font-size: 22px; }
+  }
+</style>

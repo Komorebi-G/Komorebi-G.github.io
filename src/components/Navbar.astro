@@ -1,0 +1,23 @@
+<header class="site-header">
+  <nav aria-label="主导航">
+    <a class="brand" href="/">LBH</a>
+    <div class="links">
+      <a href="/">首页</a>
+      <a href="/algorithms">算法课程</a>
+    </div>
+  </nav>
+</header>
+
+<style>
+  .site-header { position: relative; z-index: 20; width: 100%; }
+  nav { width: min(1120px, calc(100% - 48px)); height: 76px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #deddd8; }
+  .brand { color: #222320; font-size: 18px; font-weight: 720; letter-spacing: -.04em; text-decoration: none; }
+  .links { display: flex; align-items: center; gap: 28px; }
+  .links a { color: #666760; font-size: 14px; text-decoration: none; transition: color .2s ease; }
+  .links a:hover { color: #222320; }
+  @media (max-width: 620px) {
+    nav { width: min(100% - 32px, 1120px); height: 64px; }
+    .links { gap: 20px; }
+    .links a { font-size: 13px; }
+  }
+</style>

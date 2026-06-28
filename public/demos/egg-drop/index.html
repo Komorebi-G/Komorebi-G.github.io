@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鸡蛋掉落 · 算法优化对照实验台</title>
+<style>
+:root{
+  --bg:#f3f6f8;--surface:#fff;--ink:#14212b;--muted:#52616c;--line:#cbd5dc;
+  --classic:#146b8c;--classic-soft:#e3f3f8;--optimized:#d65328;--optimized-soft:#fff0e9;
+  --success:#147a4b;--success-soft:#e4f5ec;--control:#172a36;--focus:#f2b134;
+  --sans:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"Cascadia Code","SFMono-Regular",Consolas,monospace
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid var(--focus);outline-offset:2px}
+.topbar{min-height:70px;padding:10px clamp(18px,3vw,42px);display:flex;align-items:center;justify-content:space-between;gap:22px;background:var(--surface);border-bottom:2px solid var(--ink)}
+.title-group{display:flex;align-items:center;gap:16px;min-width:0}
+.course-mark{width:48px;height:48px;flex:0 0 auto;display:grid;place-items:center;background:var(--ink);color:#fff;font:800 18px var(--mono)}
+h1{margin:0;font-size:clamp(24px,2.3vw,38px);line-height:1.05;letter-spacing:-.025em;text-wrap:balance}
+.selectors{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+.selector{display:flex;align-items:center;gap:6px}
+.selector-label{font-size:12px;color:var(--muted);font-weight:800}
+.cases{display:flex;gap:6px;flex-wrap:wrap}
+.case-btn{min-height:44px;padding:8px 14px;border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-weight:700}
+.case-btn.active{border-color:var(--ink);background:var(--ink);color:#fff}
+.case-btn:disabled{opacity:.42;cursor:not-allowed}
+
+.workspace{width:min(1800px,100%);height:calc(100vh - 70px);min-height:0;margin:auto;padding:12px clamp(16px,2vw,30px);display:grid;grid-template-rows:minmax(0,1fr) auto;gap:10px}
+
+.lanes{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:0}
+.workspace.single-mode .lanes{grid-template-columns:1fr}
+.workspace.single-mode .lane:not(.selected){display:none}
+.workspace.single-mode .visual-layout{grid-template-columns:minmax(0,1fr) minmax(300px,34%)}
+.workspace.single-mode .pseudocode{min-height:280px}
+.workspace.single-mode .code-title{font-size:14px;padding:12px 16px}
+.workspace.single-mode .code-line{min-height:38px;padding:9px 32px 9px 38px;font-size:14px}
+.workspace.single-mode .code-line::before{left:14px}
+.workspace.single-mode .code-line.active::after{top:9px;right:12px}
+.workspace.single-mode .state-formula,.workspace.single-mode .coverage-formula{font-size:clamp(25px,2.6vw,42px)}
+.workspace.single-mode .dp-table th,.workspace.single-mode .dp-table td{width:clamp(34px,3.4vw,58px);height:clamp(38px,5vh,56px);font-size:clamp(12px,1.1vw,18px)}
+.lane{min-width:0;min-height:0;background:var(--surface);border:2px solid var(--line);border-radius:12px;display:grid;grid-template-rows:auto auto minmax(180px,1fr) auto;overflow:hidden}
+.lane.classic{border-top:8px solid var(--classic)}
+.lane.optimized{border-top:8px solid var(--optimized)}
+.lane-head{padding:10px 18px 7px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.lane-name{display:flex;align-items:center;gap:10px}
+.algo-letter{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;color:#fff;font:800 18px var(--mono)}
+.classic .algo-letter{background:var(--classic)}.optimized .algo-letter{background:var(--optimized)}
+.lane h2{margin:0;font-size:clamp(20px,1.6vw,27px);line-height:1.15}
+.complexity{padding:7px 10px;border-radius:7px;background:#edf1f3;font:800 16px var(--mono);white-space:nowrap}
+.work-row{padding:0 18px 8px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px}
+.work-row span{font-size:13px;color:var(--muted);font-weight:700}
+.work-row strong{font:800 19px var(--mono)}
+.work-track{height:11px;background:#e6ebee;border-radius:99px;overflow:hidden}
+.work-fill{height:100%;min-width:3px;transition:width .35s cubic-bezier(.22,1,.36,1)}
+.classic .work-fill{background:var(--classic)}.optimized .work-fill{background:var(--optimized)}
+.visual{min-height:180px;padding:9px 12px;background:#f8fafb;border-block:1px solid var(--line);overflow:auto}
+.visual-layout{min-width:0;height:100%;display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px;align-items:center}
+.state-view{min-width:0;display:flex;align-items:center;justify-content:center;overflow:auto}
+.pseudocode{align-self:stretch;min-height:190px;background:#172a36;color:#d9e4e9;border-radius:9px;padding:10px 0;overflow:hidden}
+.code-title{padding:0 12px 8px;color:#9fb4bf;font-size:12px;font-weight:800;border-bottom:1px solid #3d535f}
+.code-line{min-height:22px;padding:3px 22px 3px 28px;position:relative;font:700 10px/1.6 var(--mono);white-space:nowrap}
+.code-line::before{content:attr(data-line);position:absolute;left:9px;color:#718993;font-weight:500}
+.code-line.active{background:var(--focus);color:#172a36}
+.code-line.active::before{color:#604500}
+.code-line.active::after{content:"▶";position:absolute;right:7px;top:3px;color:#172a36}
+.dp-wrap{max-width:100%;text-align:center}
+.state-formula{margin:0 0 9px;font:800 clamp(18px,1.7vw,28px)/1.25 var(--mono);color:var(--classic)}
+.dp-table{border-collapse:collapse;margin:auto;table-layout:fixed}
+.dp-table th,.dp-table td{width:clamp(25px,2.1vw,37px);height:clamp(31px,3.7vh,42px);border:1px solid #aebcc5;text-align:center;font:700 clamp(10px,.85vw,14px) var(--mono);background:#fff}
+.dp-table th{background:#dde5ea;color:#33444f}
+.dp-table td.computed{background:var(--classic-soft)}
+.dp-table td.active{background:var(--classic);color:#fff;box-shadow:inset 0 0 0 3px #fff}
+.coverage-wrap{width:min(640px,100%);text-align:center}
+.coverage-formula{font:800 clamp(19px,1.7vw,29px)/1.25 var(--mono);color:var(--optimized);margin-bottom:10px}
+.coverage-grid{display:grid;grid-template-columns:repeat(var(--eggs),1fr);gap:10px}
+.cover-cell{min-height:78px;padding:7px 6px;border:2px solid #e5b7a7;border-radius:10px;background:#fff;display:grid;align-content:center}
+.cover-cell.active{background:var(--optimized);border-color:var(--optimized);color:#fff}
+.cover-cell span{font-size:13px;font-weight:700}.cover-cell strong{font:800 clamp(28px,3vw,48px)/1 var(--mono);margin:4px 0}
+.target-track{height:14px;margin-top:10px;border:1px solid #d8a08d;background:#ffe3d8;border-radius:99px;overflow:hidden}
+.target-fill{height:100%;background:var(--optimized);transition:width .35s cubic-bezier(.22,1,.36,1)}
+.target-caption{display:flex;justify-content:space-between;margin-top:5px;color:var(--muted);font-size:12px;font-weight:700}
+.explain{padding:8px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center}
+.explain h3{margin:0;font-size:clamp(16px,1.25vw,20px)}
+.branch{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:146px}
+.branch div{padding:7px 8px;border-radius:7px;background:#edf1f3;text-align:center}
+.branch span{display:block;font-size:11px;color:var(--muted)}.branch strong{font:800 18px var(--mono)}
+
+.control-deck{display:grid;grid-template-columns:auto minmax(420px,1fr) auto;gap:16px;align-items:center;padding:8px 16px;background:var(--control);color:#fff;border-radius:12px}
+.performance{font:800 clamp(16px,1.4vw,21px) var(--mono);white-space:nowrap}
+.performance b{color:var(--focus)}
+.player{display:grid;grid-template-columns:48px 72px 48px 1fr;gap:8px;align-items:center}
+.player button,.speed{height:44px;border:1px solid #647985;border-radius:8px;background:#fff;color:var(--ink);font-weight:800}
+.player .play{background:var(--focus);border-color:var(--focus)}
+.timeline{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+.timeline input{width:100%;accent-color:var(--focus)}
+.timeline output{min-width:48px;font:800 15px var(--mono)}
+.trace-note{text-align:right}
+.trace-note strong{display:inline;font:800 16px var(--mono);margin-right:8px}
+.speed{width:74px;margin-top:6px;padding:0 8px}
+
+@media(max-width:1100px){
+  .workspace{height:auto;min-height:calc(100vh - 82px)}
+  .lanes{grid-template-columns:1fr}.lane{min-height:620px}
+  .workspace.compare-mode .lane{min-height:620px}
+  .control-deck{grid-template-columns:auto 1fr}.trace-note{grid-column:1/-1;text-align:left}
+}
+@media(max-width:760px){
+  .topbar{align-items:flex-start;flex-direction:column}.selectors{justify-content:flex-start}.selector{align-items:flex-start;flex-direction:column}
+  .workspace{padding:10px;height:auto}
+  .lane{min-height:0}.lane-head{padding-inline:12px}.visual,.explain,.work-row{padding-inline:12px}.visual{min-height:260px}
+  .visual-layout{grid-template-columns:1fr}.pseudocode{min-height:0}.code-line.active::after{left:auto;right:10px}
+  .control-deck{grid-template-columns:1fr}.player{grid-template-columns:44px 68px 44px 1fr}.trace-note{grid-column:auto}
+  .dp-table th,.dp-table td{width:36px;height:34px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="title-group">
+    <div class="course-mark" aria-hidden="true">DP</div>
+    <div><h1>鸡蛋掉落 · 算法对照</h1></div>
+  </div>
+  <div class="selectors">
+    <div class="selector"><span class="selector-label">样例</span><nav id="cases" class="cases" aria-label="选择实验案例"></nav></div>
+    <div class="selector"><span class="selector-label">算法</span><nav id="algorithms" class="cases" aria-label="选择算法"></nav></div>
+    <div class="selector"><span class="selector-label">模式</span><nav id="modes" class="cases" aria-label="选择演示模式"></nav></div>
+  </div>
+</header>
+
+<main id="workspace" class="workspace single-mode">
+  <section class="lanes" aria-label="算法同屏对照">
+    <article id="classicLane" class="lane classic selected">
+      <div class="lane-head">
+        <div class="lane-name"><span class="algo-letter">A</span><h2>经典二维 DP</h2></div>
+        <span class="complexity">O(e·f²)</span>
+      </div>
+      <div class="work-row"><span>计算量</span><div class="work-track"><div id="classicWorkBar" class="work-fill"></div></div><strong id="classicWork"></strong></div>
+      <div id="classicVisual" class="visual"></div>
+      <div id="classicExplain" class="explain"></div>
+    </article>
+
+    <article id="optimizedLane" class="lane optimized">
+      <div class="lane-head">
+        <div class="lane-name"><span class="algo-letter">B</span><h2>覆盖楼层一维 DP</h2></div>
+        <span class="complexity">O(e·答案)</span>
+      </div>
+      <div class="work-row"><span>计算量</span><div class="work-track"><div id="optimizedWorkBar" class="work-fill"></div></div><strong id="optimizedWork"></strong></div>
+      <div id="optimizedVisual" class="visual"></div>
+      <div id="optimizedExplain" class="explain"></div>
+    </article>
+  </section>
+
+  <section class="control-deck" aria-label="播放控制">
+    <div id="performance" class="performance"></div>
+    <div class="player">
+      <button id="prev" aria-label="上一步">←</button>
+      <button id="play" class="play" aria-label="播放">▶ 播放</button>
+      <button id="next" aria-label="下一步">→</button>
+      <div class="timeline"><input id="slider" type="range" min="0" value="0" aria-label="演示进度"><output id="stepOutput"></output></div>
+    </div>
+    <div class="trace-note"><strong id="frameLabel"></strong><select id="speed" class="speed" aria-label="播放速度"><option value="1400">0.5×</option><option value="750" selected>1×</option><option value="360">2×</option><option value="170">4×</option></select></div>
+  </section>
+</main>
+
+<script src="trace_data.js"></script>
+<script>
+(()=>{
+  const D=TRACE_DATA;
+  const S={sample:1,algorithm:"classic",mode:"single",step:0,timer:null};
+  const $=id=>document.getElementById(id);
+  const E=["workspace","cases","algorithms","modes","classicLane","optimizedLane","performance","classicWorkBar","classicWork","optimizedWorkBar","optimizedWork","classicVisual","optimizedVisual","classicExplain","optimizedExplain","prev","play","next","slider","stepOutput","frameLabel","speed"].reduce((o,id)=>(o[id]=$(id),o),{});
+  const pseudo={
+    classic:[
+      "dp[1][f]=f; dp[e][1]=1",
+      "for e = 2 ... eggs",
+      "  for f = 2 ... floors",
+      "    for x = 1 ... f",
+      "      worst = 1 + max(B, S)",
+      "    dp[e][f] = min(worst)",
+      "return dp[eggs][floors]"
+    ],
+    optimized:[
+      "f[0...eggs] = 0; moves = 0",
+      "while f[eggs] < floors",
+      "  moves = moves + 1",
+      "  for k = eggs ... 1",
+      "    f[k] = S + B + 1",
+      "  检查当前最大覆盖层数",
+      "return moves"
+    ]
+  };
+  const compareLines={classic:[0,1,3,4,5,6],optimized:[0,1,4,5,5,6]};
+  const sample=()=>D.samples[S.sample];
+  const getAlgo=id=>sample().algorithms.find(a=>a.id===id);
+  const classic=()=>getAlgo("classic");
+  const optimized=()=>getAlgo("optimized");
+  const selectedAlgo=()=>getAlgo(S.algorithm);
+
+  function closestCommit(target){
+    const commits=classic().events.filter(e=>e.type==="commit"&&e.eggs===sample().eggs);
+    return commits.reduce((best,e)=>Math.abs(e.floors-target)<Math.abs(best.floors-target)?e:best,commits[0]);
+  }
+  function frames(){
+    const s=sample(),c=classic(),o=optimized();
+    const rounds=o.events.filter(e=>e.type==="round");
+    return {
+      classic:[c.events[0],closestCommit(Math.ceil(s.floors*.25)),closestCommit(Math.ceil(s.floors*.5)),closestCommit(Math.ceil(s.floors*.75)),closestCommit(s.floors),c.events[c.events.length-1]],
+      optimized:[o.events[0],rounds[0],rounds[1]||rounds[0],rounds[2]||rounds.at(-1),rounds.at(-1),o.events[o.events.length-1]]
+    };
+  }
+  function sequence(){
+    if(S.mode==="single")return selectedAlgo().events;
+    const fs=frames();
+    return fs.classic.map((event,i)=>({classic:event,optimized:fs.optimized[i]}));
+  }
+  function currentEvents(){
+    if(S.mode==="single"){
+      const event=sequence()[S.step];
+      return S.algorithm==="classic"?{classic:event,optimized:null}:{classic:null,optimized:event};
+    }
+    return sequence()[S.step];
+  }
+  function activeLine(kind,ev){
+    if(S.mode==="compare")return null;
+    if(kind==="classic"){
+      if(ev.type==="init")return 0;
+      if(ev.type==="try")return 4;
+      if(ev.type==="commit")return 5;
+      return 6;
+    }
+    if(ev.type==="init")return 0;
+    if(ev.type==="update")return 4;
+    if(ev.type==="round")return 5;
+    return 6;
+  }
+  function controlsStop(){
+    clearInterval(S.timer);S.timer=null;E.play.textContent="▶ 播放";E.play.setAttribute("aria-label","播放");
+  }
+  function reset(){
+    controlsStop();S.step=0;renderSelectors();render();
+  }
+  function renderCases(){
+    E.cases.innerHTML=D.samples.map((s,i)=>`<button class="case-btn ${i===S.sample?"active":""}" data-index="${i}">${s.title}</button>`).join("");
+    E.cases.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.sample=+b.dataset.index;reset()});
+  }
+  function renderSelectors(){
+    renderCases();
+    E.algorithms.innerHTML=[
+      ["classic","经典 DP"],["optimized","优化 DP"]
+    ].map(([id,name])=>`<button class="case-btn ${id===S.algorithm?"active":""}" data-id="${id}">${name}</button>`).join("");
+    E.algorithms.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.algorithm=b.dataset.id;reset()});
+    E.modes.innerHTML=[
+      ["single","单算法"],["compare","性能对比"]
+    ].map(([id,name])=>`<button class="case-btn ${id===S.mode?"active":""}" data-id="${id}">${name}</button>`).join("");
+    E.modes.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.mode=b.dataset.id;reset()});
+    E.algorithms.querySelectorAll("button").forEach(b=>b.disabled=S.mode==="compare");
+  }
+  function classicTable(ev){
+    const s=sample(),rows=ev.table||[],activeE=Math.max(1,ev.eggs),activeF=ev.floors;
+    let h=`<div class="dp-wrap"><div class="state-formula">dp[e][f] = 1 + min max(碎, 未碎)</div><table class="dp-table" aria-label="经典动态规划状态表"><tr><th>e\\f</th>`;
+    for(let f=0;f<=s.floors;f++)h+=`<th>${f}</th>`;
+    h+="</tr>";
+    for(let e=1;e<=s.eggs;e++){
+      h+=`<tr><th>${e}</th>`;
+      for(let f=0;f<=s.floors;f++){
+        const value=rows[e]?.[f]??0,cls=[value?"computed":"",ev.eggs>0&&e===activeE&&f===activeF?"active":""].join(" ");
+        h+=`<td class="${cls}">${value||"·"}</td>`;
+      }
+      h+="</tr>";
+    }
+    return h+"</table></div>";
+  }
+  function coverage(ev){
+    const s=sample(),row=(ev.table||[]).at(-1)||[],coverage=row[s.eggs]||ev.coverage||0,pct=Math.min(100,coverage/s.floors*100);
+    let cells="";
+    for(let k=1;k<=s.eggs;k++)cells+=`<div class="cover-cell ${k===ev.eggs&&ev.type==="update"?"active":""}"><span>${k} 个鸡蛋</span><strong>${row[k]??0}</strong></div>`;
+    return `<div class="coverage-wrap" style="--eggs:${s.eggs}"><div class="coverage-formula">f[k] ← f[k] + f[k−1] + 1</div><div class="coverage-grid">${cells}</div><div class="target-track"><div class="target-fill" style="width:${pct}%"></div></div><div class="target-caption"><span>0</span><strong>${coverage} / ${s.floors}</strong><span>${s.floors}</span></div></div>`;
+  }
+  function codePanel(kind,ev){
+    const lines=pseudo[kind],active=ev?activeLine(kind,ev):null;
+    return `<aside class="pseudocode" aria-label="${kind==="classic"?"经典二维 DP":"覆盖楼层一维 DP"} 伪代码"><div class="code-title">伪代码</div>${lines.map((line,i)=>`<div class="code-line ${i===active?"active":""}" data-line="${i+1}">${line}</div>`).join("")}</aside>`;
+  }
+  function explanation(kind,ev){
+    const isClassic=kind==="classic";
+    const left=isClassic?"碎后代价":"碎后覆盖",right=isClassic?"未碎代价":"未碎覆盖";
+    return `<h3>${ev.title}</h3><div class="branch"><div><span>${left}</span><strong>${ev.broken??0}</strong></div><div><span>${right}</span><strong>${ev.safe??0}</strong></div></div>`;
+  }
+  function renderLane(kind,ev){
+    const algo=getAlgo(kind),visual=kind==="classic"?classicTable(ev):coverage(ev);
+    E[`${kind}Visual`].innerHTML=`<div class="visual-layout"><div class="state-view">${visual}</div>${codePanel(kind,ev)}</div>`;
+    E[`${kind}Explain`].innerHTML=explanation(kind,ev);
+    E[`${kind}Work`].textContent=`${ev.transitions} / ${algo.stats.transitions}`;
+    E[`${kind}WorkBar`].style.width=`${ev.transitions/algo.stats.transitions*100}%`;
+  }
+  function render(){
+    const events=currentEvents(),seq=sequence(),total=seq.length;
+    E.workspace.className=`workspace ${S.mode}-mode`;
+    E.classicLane.classList.toggle("selected",S.algorithm==="classic");
+    E.optimizedLane.classList.toggle("selected",S.algorithm==="optimized");
+    if(events.classic)renderLane("classic",events.classic);
+    if(events.optimized)renderLane("optimized",events.optimized);
+    if(S.mode==="single"){
+      const a=selectedAlgo();
+      E.performance.innerHTML=`${a.name} <b>${S.step+1} / ${total}</b>`;
+      E.frameLabel.textContent="完整轨迹";
+    }else{
+      const c=classic(),o=optimized(),saved=(1-o.stats.transitions/c.stats.transitions)*100;
+      E.performance.innerHTML=`${c.stats.transitions} → ${o.stats.transitions} <b>−${saved.toFixed(1)}%</b>`;
+      E.frameLabel.textContent="6 帧";
+    }
+    E.slider.max=total-1;E.slider.value=S.step;E.stepOutput.textContent=`${S.step+1} / ${total}`;
+    E.prev.disabled=S.step===0;E.next.disabled=S.step===total-1;
+  }
+  function move(delta){controlsStop();S.step=Math.max(0,Math.min(sequence().length-1,S.step+delta));render()}
+  E.prev.onclick=()=>move(-1);E.next.onclick=()=>move(1);
+  E.slider.oninput=()=>{controlsStop();S.step=+E.slider.value;render()};
+  E.play.onclick=()=>{
+    if(S.timer){controlsStop();return}
+    if(S.step===sequence().length-1)S.step=0;
+    E.play.textContent="Ⅱ 暂停";E.play.setAttribute("aria-label","暂停");render();
+    S.timer=setInterval(()=>{if(S.step===sequence().length-1){controlsStop();return}S.step++;render()},+E.speed.value);
+  };
+  document.addEventListener("keydown",e=>{
+    if(["INPUT","SELECT","BUTTON"].includes(document.activeElement.tagName))return;
+    if(e.key==="ArrowLeft")move(-1);
+    if(e.key==="ArrowRight")move(1);
+    if(e.key===" "){e.preventDefault();E.play.click()}
+  });
+  renderSelectors();render();
+})();
+</script>
+</body>
+</html>

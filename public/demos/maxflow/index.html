@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>最大流算法演示</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f6;
+      --surface: #ffffff;
+      --surface-2: #f7f9fc;
+      --ink: #142033;
+      --muted: #56647a;
+      --line: #cbd4df;
+      --line-strong: #91a0b4;
+      --blue: #1769d2;
+      --blue-soft: #dceafe;
+      --orange: #e4572e;
+      --orange-soft: #fff0e9;
+      --green: #12805c;
+      --yellow: #f0c44f;
+      --radius: 12px;
+      --sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
+    button, select, input { font: inherit; }
+    button, select { min-height: 44px; }
+    button:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 3px solid rgba(23, 105, 210, .3);
+      outline-offset: 2px;
+    }
+
+    .app { min-height: 100vh; }
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 18px clamp(18px, 3vw, 42px);
+      background: var(--surface);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .title-group h1 {
+      margin: 0;
+      font-size: clamp(26px, 3vw, 38px);
+      line-height: 1.05;
+      letter-spacing: -.03em;
+      text-wrap: balance;
+    }
+    .title-group p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .selectors { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+    .field { display: grid; gap: 5px; }
+    .field label { color: var(--muted); font-size: 12px; font-weight: 700; }
+    select {
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      padding: 0 34px 0 12px;
+      font-weight: 650;
+    }
+    .mode-switch {
+      display: flex;
+      align-self: end;
+      padding: 3px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: var(--surface-2);
+    }
+    .mode-switch button {
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      padding: 0 16px;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 750;
+    }
+    .mode-switch button.active { background: var(--ink); color: white; }
+    .mode-switch button:disabled { cursor: not-allowed; opacity: .42; }
+
+    .workspace {
+      width: min(1880px, 100%);
+      margin: 0 auto;
+      padding: 18px clamp(14px, 2vw, 30px) 118px;
+    }
+    .case-strip {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.4fr) repeat(3, minmax(150px, .6fr));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .case-main, .case-stat { padding: 14px 18px; }
+    .case-main { display: flex; flex-direction: column; justify-content: center; }
+    .case-main strong { font-size: 19px; }
+    .case-main span { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .case-stat { border-left: 1px solid var(--line); }
+    .case-stat span { display: block; color: var(--muted); font-size: 12px; }
+    .case-stat strong { display: block; margin-top: 6px; font-size: 20px; }
+
+    .single-layout {
+      display: grid;
+      grid-template-columns: minmax(560px, 1.45fr) minmax(400px, .8fr);
+      gap: 16px;
+      margin-top: 16px;
+      align-items: stretch;
+    }
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .panel-head {
+      min-height: 68px;
+      padding: 13px 17px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .panel-head h2 { margin: 0; font-size: clamp(19px, 1.7vw, 25px); line-height: 1.1; }
+    .panel-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .complexity {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 9px;
+      background: var(--surface-2);
+      font: 700 13px/1 var(--mono);
+    }
+    .network-wrap {
+      position: relative;
+      height: clamp(430px, 55vh, 650px);
+      min-height: 430px;
+      background: var(--surface-2);
+    }
+    .network { display: block; width: 100%; height: 100%; }
+    .edge {
+      fill: none;
+      stroke: #9aa8b9;
+      stroke-width: 2.5;
+      marker-end: url(#arrow);
+      transition: stroke .2s ease, stroke-width .2s ease, opacity .2s ease;
+    }
+    .edge.zero { stroke-dasharray: 7 6; opacity: .55; }
+    .edge.has-flow { stroke: var(--blue); }
+    .edge.active { stroke: var(--orange); stroke-width: 6; marker-end: url(#arrow-active); }
+    .edge-label {
+      fill: var(--ink);
+      font: 700 14px/1 var(--mono);
+      paint-order: stroke;
+      stroke: var(--surface-2);
+      stroke-width: 6px;
+      stroke-linejoin: round;
+    }
+    .node-shape { fill: white; stroke: var(--ink); stroke-width: 2; }
+    .node-group[data-kind="source"] .node-shape { fill: var(--ink); }
+    .node-group[data-kind="sink"] .node-shape { fill: var(--orange); }
+    .node-group[data-kind="game"] .node-shape { fill: #f9dc7c; }
+    .node-group[data-kind="team"] .node-shape { fill: #cce9e1; }
+    .node-group.active .node-shape { fill: var(--orange-soft); stroke: var(--orange); stroke-width: 5; }
+    .node-name { fill: var(--ink); text-anchor: middle; font: 750 14px/1 var(--sans); }
+    .node-group[data-kind="source"] .node-name,
+    .node-group[data-kind="sink"] .node-name { fill: white; }
+    .node-badge { fill: var(--ink); stroke: white; stroke-width: 2; }
+    .node-badge-text { fill: white; text-anchor: middle; font: 750 11px/1 var(--mono); }
+
+    .explain-panel { display: grid; grid-template-rows: auto auto minmax(260px, 1fr) auto; }
+    .step-focus {
+      padding: 17px;
+      border-bottom: 1px solid var(--line);
+      background: var(--orange-soft);
+    }
+    .step-focus header { display: flex; align-items: center; gap: 10px; }
+    .event-type {
+      border-radius: 999px;
+      background: var(--orange);
+      color: white;
+      padding: 6px 9px;
+      font: 750 12px/1 var(--mono);
+      text-transform: uppercase;
+    }
+    .step-focus h3 { margin: 11px 0 6px; font-size: clamp(21px, 2vw, 28px); }
+    .step-focus p { margin: 0; color: #4c372f; font-size: 16px; line-height: 1.55; }
+    .flow-row { margin-left: auto; text-align: right; }
+    .flow-row span { display: block; color: var(--muted); font-size: 11px; }
+    .flow-row strong { font-size: 25px; }
+    .pseudo { padding: 14px 0; overflow: auto; background: #111b2a; color: #d8e1ec; }
+    .pseudo h3 { margin: 0 18px 10px; color: white; font-size: 15px; }
+    .code-line {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      min-height: 38px;
+      padding: 7px 18px;
+      font: 650 clamp(14px, 1.25vw, 17px)/1.4 var(--mono);
+      white-space: pre-wrap;
+    }
+    .code-line .line-no { color: #718198; text-align: right; user-select: none; }
+    .code-line.active { background: var(--orange); color: white; }
+    .code-line.active .line-no { color: white; }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--line);
+    }
+    .stat { padding: 13px 12px; border-right: 1px solid var(--line); }
+    .stat:last-child { border-right: 0; }
+    .stat span { display: block; color: var(--muted); font-size: 11px; }
+    .stat strong { display: block; margin-top: 5px; font-size: 22px; }
+
+    .compare-layout { display: none; margin-top: 16px; }
+    body[data-mode="compare"] .single-layout { display: none; }
+    body[data-mode="compare"] .compare-layout { display: block; }
+    .compare-intro {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .compare-summary { padding: 16px 20px; }
+    .compare-summary.optimized { text-align: right; }
+    .compare-summary span { color: var(--muted); font-size: 12px; }
+    .compare-summary strong { display: block; margin-top: 4px; font-size: 22px; }
+    .saving {
+      border-radius: 999px;
+      background: var(--green);
+      color: white;
+      padding: 9px 13px;
+      font-weight: 800;
+    }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .compare-side { min-width: 0; }
+    .compare-side + .compare-side { border-left: 1px solid var(--line-strong); }
+    .compare-side header {
+      padding: 13px 17px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+    }
+    .compare-side h3 { margin: 0; font-size: 18px; }
+    .compare-side header span { color: var(--muted); font-size: 13px; }
+    .compare-network { height: clamp(300px, 34vh, 430px); background: var(--surface-2); }
+    .compare-state {
+      min-height: 112px;
+      padding: 14px 17px;
+      border-top: 1px solid var(--line);
+    }
+    .compare-state b { display: block; color: var(--orange); font-size: 18px; }
+    .compare-state p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .work-meter {
+      display: grid;
+      grid-template-columns: 90px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 11px;
+      font-size: 13px;
+    }
+    .meter-track { height: 12px; background: #dbe2eb; overflow: hidden; border-radius: 999px; }
+    .meter-fill { height: 100%; background: var(--blue); transition: width .2s ease; }
+    .optimized .meter-fill { background: var(--green); }
+    .compare-insight {
+      padding: 14px 18px;
+      border-top: 1px solid var(--line-strong);
+      background: var(--blue-soft);
+      font-size: 16px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .controls {
+      position: fixed;
+      z-index: 10;
+      left: 50%;
+      bottom: 18px;
+      width: min(900px, calc(100% - 28px));
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: auto auto auto minmax(180px, 1fr) auto;
+      gap: 9px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 6px 8px rgba(20, 32, 51, .14);
+    }
+    .control-btn {
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      padding: 0 14px;
+      cursor: pointer;
+      font-weight: 750;
+    }
+    .control-btn.primary { min-width: 104px; border-color: var(--blue); background: var(--blue); color: white; }
+    .control-btn:disabled { cursor: not-allowed; opacity: .4; }
+    .timeline { display: grid; grid-template-columns: 1fr 72px; align-items: center; gap: 8px; }
+    input[type="range"] { width: 100%; accent-color: var(--orange); }
+    .step-count { text-align: right; font: 700 13px/1 var(--mono); }
+    .speed-select { min-height: 44px; }
+
+    @media (max-width: 1100px) {
+      .topbar { grid-template-columns: 1fr; }
+      .selectors { justify-content: flex-start; }
+      .single-layout { grid-template-columns: 1fr; }
+      .network-wrap { height: 520px; }
+      .explain-panel { grid-template-rows: auto auto minmax(300px, auto) auto; }
+    }
+    @media (max-width: 760px) {
+      .topbar { padding: 15px; }
+      .selectors { display: grid; grid-template-columns: 1fr 1fr; }
+      .field select { width: 100%; }
+      .mode-switch { grid-column: 1 / -1; }
+      .mode-switch button { flex: 1; }
+      .workspace { padding: 12px 10px 126px; }
+      .case-strip { grid-template-columns: 1fr 1fr; }
+      .case-main { grid-column: 1 / -1; border-bottom: 1px solid var(--line); }
+      .case-stat { border-left: 0; border-right: 1px solid var(--line); }
+      .case-stat:last-child { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+      .network-wrap { min-height: 380px; height: 430px; }
+      .compare-intro { grid-template-columns: 1fr; text-align: left; }
+      .compare-summary.optimized { text-align: left; }
+      .saving { margin: 0 20px; justify-self: start; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .compare-side + .compare-side { border-left: 0; border-top: 1px solid var(--line-strong); }
+      .compare-network { height: 390px; }
+      .controls { grid-template-columns: auto auto auto 1fr; bottom: 8px; }
+      .speed-select { grid-column: 1 / -1; width: 100%; }
+      .timeline { min-width: 0; }
+      .stat { padding: 10px 8px; }
+      .stat strong { font-size: 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body data-mode="single">
+  <div class="app">
+    <header class="topbar">
+      <div class="title-group">
+        <h1>最大流算法演示</h1>
+        <p>逐步观察执行路径，或同步比较当前弧优化如何减少重复扫描。</p>
+      </div>
+      <div class="selectors">
+        <div class="field">
+          <label for="sampleSelect">演示样例</label>
+          <select id="sampleSelect"></select>
+        </div>
+        <div class="field" id="algorithmField">
+          <label for="algorithmSelect">算法</label>
+          <select id="algorithmSelect"></select>
+        </div>
+        <div class="mode-switch" aria-label="演示模式">
+          <button class="active" data-mode="single">单算法</button>
+          <button data-mode="compare">性能对比</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section id="caseStrip" class="case-strip" aria-label="样例摘要"></section>
+
+      <div class="single-layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2 id="algorithmTitle"></h2><p id="algorithmPrinciple"></p></div>
+            <span id="complexity" class="complexity"></span>
+          </div>
+          <div id="singleNetwork" class="network-wrap"></div>
+        </section>
+
+        <aside class="panel explain-panel">
+          <div class="panel-head">
+            <div><h2>当前步骤</h2><p>橙色只标记本步的核心变化</p></div>
+          </div>
+          <div class="step-focus">
+            <header>
+              <span id="eventType" class="event-type"></span>
+              <div class="flow-row"><span>当前流 / 目标</span><strong id="flowValue"></strong></div>
+            </header>
+            <h3 id="eventTitle"></h3>
+            <p id="eventDetail"></p>
+          </div>
+          <div class="pseudo">
+            <h3>伪代码</h3>
+            <div id="pseudoCode"></div>
+          </div>
+          <div id="statsRow" class="stats-row"></div>
+        </aside>
+      </div>
+
+      <section class="panel compare-layout">
+        <div class="compare-intro">
+          <div class="compare-summary"><span>基准</span><strong>Dinic（基础版）</strong></div>
+          <div id="saving" class="saving"></div>
+          <div class="compare-summary optimized"><span>优化</span><strong>Dinic（当前弧）</strong></div>
+        </div>
+        <div class="compare-grid">
+          <article class="compare-side">
+            <header><h3>每次从头扫描</h3><span>current[u] 不保留</span></header>
+            <div id="baseNetwork" class="compare-network"></div>
+            <div class="compare-state">
+              <b id="baseEventTitle"></b>
+              <p id="baseEventDetail"></p>
+              <div class="work-meter"><span>累计边扫描</span><div class="meter-track"><div id="baseMeter" class="meter-fill"></div></div><strong id="baseScans"></strong></div>
+            </div>
+          </article>
+          <article class="compare-side optimized">
+            <header><h3>从上次位置继续</h3><span>current[u] 保存游标</span></header>
+            <div id="optimizedNetwork" class="compare-network"></div>
+            <div class="compare-state">
+              <b id="optimizedEventTitle"></b>
+              <p id="optimizedEventDetail"></p>
+              <div class="work-meter"><span>累计边扫描</span><div class="meter-track"><div id="optimizedMeter" class="meter-fill"></div></div><strong id="optimizedScans"></strong></div>
+            </div>
+          </article>
+        </div>
+        <div id="compareInsight" class="compare-insight"></div>
+      </section>
+    </main>
+
+    <div class="controls" aria-label="播放控制">
+      <button id="firstBtn" class="control-btn" title="回到开始">↤</button>
+      <button id="prevBtn" class="control-btn">← 单步</button>
+      <button id="playBtn" class="control-btn primary">▶ 播放</button>
+      <div class="timeline">
+        <input id="stepSlider" type="range" min="0" max="1" value="0" aria-label="演示进度">
+        <span id="stepCount" class="step-count">1 / 1</span>
+      </div>
+      <select id="speedSelect" class="speed-select" aria-label="播放速度">
+        <option value="1600">0.5×</option>
+        <option value="1000" selected>1×</option>
+        <option value="600">1.5×</option>
+        <option value="350">2×</option>
+      </select>
+    </div>
+  </div>
+
+  <script src="trace_data.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const data = window.TRACE_DATA;
+      if (!data?.samples?.length) {
+        document.body.innerHTML = '<p style="padding:32px;font:18px system-ui">缺少 trace_data.js，请先生成算法轨迹。</p>';
+        return;
+      }
+
+      const $ = (selector) => document.querySelector(selector);
+      const state = { sample: 0, algorithm: 0, mode: 'single', step: 0, timer: null };
+      const el = {
+        sample: $('#sampleSelect'), algorithm: $('#algorithmSelect'), algorithmField: $('#algorithmField'),
+        caseStrip: $('#caseStrip'), algorithmTitle: $('#algorithmTitle'),
+        algorithmPrinciple: $('#algorithmPrinciple'), complexity: $('#complexity'),
+        eventType: $('#eventType'), eventTitle: $('#eventTitle'), eventDetail: $('#eventDetail'),
+        flowValue: $('#flowValue'), pseudo: $('#pseudoCode'), stats: $('#statsRow'),
+        saving: $('#saving'), baseTitle: $('#baseEventTitle'), baseDetail: $('#baseEventDetail'),
+        optimizedTitle: $('#optimizedEventTitle'), optimizedDetail: $('#optimizedEventDetail'),
+        baseMeter: $('#baseMeter'), optimizedMeter: $('#optimizedMeter'),
+        baseScans: $('#baseScans'), optimizedScans: $('#optimizedScans'), insight: $('#compareInsight'),
+        first: $('#firstBtn'), prev: $('#prevBtn'), play: $('#playBtn'),
+        slider: $('#stepSlider'), count: $('#stepCount'), speed: $('#speedSelect')
+      };
+
+      const pseudo = {
+        ford_fulkerson: [
+          ['init', 'flow ← 0'],
+          ['search', 'while DFS(s, t) 找到增广路 P:'],
+          ['augment', '    Δ ← P 上的最小剩余容量'],
+          ['augment', '    沿 P 更新正向与反向残量'],
+          ['augment', '    flow ← flow + Δ'],
+          ['blocked', 'return flow']
+        ],
+        dinic_basic: [
+          ['init', 'flow ← 0'],
+          ['bfs', 'while BFS 构造层次图:'],
+          ['blocking', '    while 存在层次图增广路:'],
+          ['augment', '        从邻接表第 0 条边开始 DFS'],
+          ['augment', '        推送瓶颈流并更新残量'],
+          ['blocking', '    当前层次图形成阻塞流'],
+          ['finish', 'return flow']
+        ],
+        dinic_current_arc: [
+          ['init', 'flow ← 0'],
+          ['bfs', 'while BFS 构造层次图:'],
+          ['bfs', '    current[u] ← 0'],
+          ['blocking', '    while 存在层次图增广路:'],
+          ['augment', '        从 current[u] 开始 DFS'],
+          ['augment', '        失败边跳过，游标继续前进'],
+          ['blocking', '    当前层次图形成阻塞流'],
+          ['finish', 'return flow']
+        ],
+        push_relabel: [
+          ['init', 'height[s] ← |V|，建立预流'],
+          ['global', '从汇点反向 BFS，更新高度'],
+          ['select', '选择最高的活动节点 u'],
+          ['push', '若 h[u] = h[v] + 1，则 push(u,v)'],
+          ['relabel', '无允许边时 relabel(u)'],
+          ['gap', '高度层为空时执行 gap 优化'],
+          ['finish', '直到没有活动节点']
+        ]
+      };
+
+      const activeLineByType = {
+        ford_fulkerson: { init: 0, augment: 2, blocked: 5, finish: 5 },
+        dinic_basic: { init: 0, bfs: 1, augment: 3, blocking: 5, finish: 6 },
+        dinic_current_arc: { init: 0, bfs: 1, augment: 4, blocking: 6, finish: 7 },
+        push_relabel: { init: 0, preflow: 0, global: 1, select: 2, push: 3, relabel: 4, gap: 5, finish: 6 }
+      };
+
+      const sample = () => data.samples[state.sample];
+      const algorithm = () => sample().algorithms[state.algorithm];
+      const comparePair = () => [sample().algorithms.find(a => a.id === 'dinic_basic'), sample().algorithms.find(a => a.id === 'dinic_current_arc')];
+      const comparisonAvailable = () => comparePair().every(Boolean);
+      const keyEvents = (algo) => algo.events.filter((event, index, events) =>
+        index === 0 || index === events.length - 1 || ['bfs', 'augment', 'blocking', 'blocked'].includes(event.type)
+      );
+      const currentLength = () => state.mode === 'compare' ? Math.max(...comparePair().map(a => keyEvents(a).length)) : algorithm().events.length;
+      const eventAtProgress = (events, step, length) => events[Math.min(events.length - 1, Math.round(step * (events.length - 1) / Math.max(1, length - 1)))];
+
+      class NetworkView {
+        constructor(container, prefix) {
+          this.container = container;
+          this.prefix = prefix;
+          this.sampleId = null;
+        }
+        svg(name, attributes = {}) {
+          const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+          Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+          return node;
+        }
+        point(node) { return { x: node.x * 10, y: node.y * 6 }; }
+        path(edge, currentSample) {
+          const a = this.point(currentSample.nodes[edge.from]);
+          const b = this.point(currentSample.nodes[edge.to]);
+          const bend = edge.id % 2 ? -9 : 9;
+          return `M ${a.x} ${a.y} C ${a.x + (b.x-a.x)*.38} ${a.y+bend}, ${a.x + (b.x-a.x)*.68} ${b.y-bend}, ${b.x} ${b.y}`;
+        }
+        build(currentSample) {
+          this.sampleId = currentSample.id;
+          this.container.innerHTML = '';
+          const root = this.svg('svg', { class: 'network', viewBox: '0 0 1000 600', role: 'img', 'aria-label': `${currentSample.title} 流网络` });
+          const defs = this.svg('defs');
+          const marker = this.svg('marker', { id: `${this.prefix}-arrow`, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });
+          marker.append(this.svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#9aa8b9' }));
+          const activeMarker = this.svg('marker', { id: `${this.prefix}-arrow-active`, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });
+          activeMarker.append(this.svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#e4572e' }));
+          defs.append(marker, activeMarker);
+          root.append(defs);
+          const edgeLayer = this.svg('g');
+          const nodeLayer = this.svg('g');
+          currentSample.edges.forEach(edge => {
+            const group = this.svg('g', { 'data-edge-id': edge.id });
+            const d = this.path(edge, currentSample);
+            const guide = this.svg('path', { id: `${this.prefix}-path-${edge.id}`, d, fill: 'none', stroke: 'none' });
+            const path = this.svg('path', { class: `edge${edge.capacity === 0 ? ' zero' : ''}`, d, 'marker-end': `url(#${this.prefix}-arrow)` });
+            const label = this.svg('text', { class: 'edge-label', dy: -8 });
+            const textPath = this.svg('textPath', { href: `#${this.prefix}-path-${edge.id}`, startOffset: '50%', 'text-anchor': 'middle' });
+            textPath.textContent = `0 / ${edge.capacity}`;
+            label.append(textPath);
+            group.append(guide, path, label);
+            edgeLayer.append(group);
+          });
+          currentSample.nodes.forEach(node => {
+            const p = this.point(node);
+            const group = this.svg('g', { class: 'node-group', 'data-node-id': node.id, 'data-kind': node.kind, transform: `translate(${p.x} ${p.y})` });
+            const shape = node.kind === 'team'
+              ? this.svg('circle', { class: 'node-shape', r: 42 })
+              : this.svg('rect', { class: 'node-shape', x: -54, y: -34, width: 108, height: 68, rx: 8 });
+            const name = this.svg('text', { class: 'node-name', y: 4 });
+            const parts = node.name.split(' ');
+            if (parts.length > 1) {
+              parts.forEach((part, i) => {
+                const span = this.svg('tspan', { x: 0, dy: i === 0 ? -5 : 17 });
+                span.textContent = part;
+                name.append(span);
+              });
+            } else name.textContent = node.name;
+            const badge = this.svg('g', { class: 'badge', transform: 'translate(38 -34)' });
+            badge.append(this.svg('circle', { class: 'node-badge', r: 16 }), this.svg('text', { class: 'node-badge-text', y: 4 }));
+            group.append(shape, name, badge);
+            nodeLayer.append(group);
+          });
+          root.append(edgeLayer, nodeLayer);
+          this.container.append(root);
+        }
+        render(currentSample, event) {
+          if (this.sampleId !== currentSample.id) this.build(currentSample);
+          currentSample.edges.forEach(edge => {
+            const group = this.container.querySelector(`[data-edge-id="${edge.id}"]`);
+            const path = group.querySelector('.edge');
+            const flow = event.edgeFlow[edge.id] ?? 0;
+            path.classList.toggle('active', event.activeEdges.includes(edge.id));
+            path.classList.toggle('has-flow', flow > 0);
+            path.setAttribute('marker-end', `url(#${this.prefix}-${event.activeEdges.includes(edge.id) ? 'arrow-active' : 'arrow'})`);
+            group.querySelector('textPath').textContent = `${flow} / ${edge.capacity}`;
+          });
+          currentSample.nodes.forEach(node => {
+            const group = this.container.querySelector(`[data-node-id="${node.id}"]`);
+            group.classList.toggle('active', event.activeNodes.includes(node.id));
+            const badge = group.querySelector('.badge');
+            let text = '';
+            if (event.heights?.length) text = `h${event.heights[node.id]}`;
+            else if (event.levels?.length) text = event.levels[node.id] < 0 ? '×' : `L${event.levels[node.id]}`;
+            if (event.excess?.length && event.excess[node.id] !== 0) text += `${text ? '·' : ''}e${event.excess[node.id]}`;
+            badge.style.display = text ? '' : 'none';
+            badge.querySelector('text').textContent = text;
+          });
+        }
+      }
+
+      const views = {
+        single: new NetworkView($('#singleNetwork'), 'single'),
+        base: new NetworkView($('#baseNetwork'), 'base'),
+        optimized: new NetworkView($('#optimizedNetwork'), 'optimized')
+      };
+
+      function stop() {
+        clearInterval(state.timer);
+        state.timer = null;
+        el.play.textContent = '▶ 播放';
+      }
+
+      function renderSelectors() {
+        el.sample.innerHTML = data.samples.map((item, i) => `<option value="${i}">${item.title}</option>`).join('');
+        el.sample.value = state.sample;
+        el.algorithm.innerHTML = sample().algorithms.map((item, i) => `<option value="${i}">${item.name}</option>`).join('');
+        el.algorithm.value = state.algorithm;
+        const compareButton = document.querySelector('[data-mode="compare"]');
+        compareButton.disabled = !comparisonAvailable();
+        compareButton.title = comparisonAvailable() ? '比较 Dinic 基础版与当前弧版' : '当前样例没有基准—优化算法对';
+      }
+
+      function renderCase() {
+        const s = sample();
+        el.caseStrip.innerHTML = `
+          <div class="case-main"><strong>${s.title}</strong><span>${s.description}</span></div>
+          ${s.summary.map(item => `<div class="case-stat"><span>${item.label}</span><strong>${item.value}</strong></div>`).join('')}
+        `;
+      }
+
+      function renderPseudo(currentAlgorithm, event) {
+        const lines = pseudo[currentAlgorithm.id] || [['init', '执行算法']];
+        const active = activeLineByType[currentAlgorithm.id]?.[event.type] ?? 0;
+        el.pseudo.innerHTML = lines.map(([, text], index) => `
+          <div class="code-line ${index === active ? 'active' : ''}">
+            <span class="line-no">${index + 1}</span><span>${text}</span>
+          </div>
+        `).join('');
+      }
+
+      function renderSingle() {
+        const s = sample();
+        const a = algorithm();
+        const event = a.events[state.step];
+        el.algorithmTitle.textContent = a.name;
+        el.algorithmPrinciple.textContent = a.principle;
+        el.complexity.textContent = a.complexity;
+        el.eventType.textContent = event.type;
+        el.eventTitle.textContent = event.title;
+        el.eventDetail.textContent = event.detail;
+        el.flowValue.textContent = `${event.flow} / ${s.requiredFlow}`;
+        renderPseudo(a, event);
+        const metrics = [
+          ['边扫描', event.stats.scans],
+          [a.id === 'push_relabel' ? 'Push' : 'DFS 调用', a.id === 'push_relabel' ? event.stats.pushes : event.stats.dfs],
+          ['BFS', event.stats.bfs],
+          ['增广 / 重标号', event.stats.augmentations || event.stats.relabels]
+        ];
+        el.stats.innerHTML = metrics.map(([label, value]) => `<div class="stat"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        views.single.render(s, event);
+      }
+
+      function renderCompare() {
+        const s = sample();
+        const [base, optimized] = comparePair();
+        const baseEvents = keyEvents(base);
+        const optimizedEvents = keyEvents(optimized);
+        const length = Math.max(baseEvents.length, optimizedEvents.length);
+        const baseEvent = eventAtProgress(baseEvents, state.step, length);
+        const optimizedEvent = eventAtProgress(optimizedEvents, state.step, length);
+        const maxScans = Math.max(base.stats.scans, optimized.stats.scans);
+        const saved = base.stats.scans - optimized.stats.scans;
+        const percent = Math.round(saved / base.stats.scans * 100);
+        el.saving.textContent = `少扫描 ${saved} 次（−${percent}%）`;
+        el.baseTitle.textContent = baseEvent.title;
+        el.baseDetail.textContent = baseEvent.detail;
+        el.optimizedTitle.textContent = optimizedEvent.title;
+        el.optimizedDetail.textContent = optimizedEvent.detail;
+        el.baseScans.textContent = baseEvent.stats.scans;
+        el.optimizedScans.textContent = optimizedEvent.stats.scans;
+        el.baseMeter.style.width = `${baseEvent.stats.scans / maxScans * 100}%`;
+        el.optimizedMeter.style.width = `${optimizedEvent.stats.scans / maxScans * 100}%`;
+        const gap = baseEvent.stats.scans - optimizedEvent.stats.scans;
+        el.insight.textContent = gap > 0
+          ? `当前关键步骤：两者流量均为 ${baseEvent.flow}，基础版已多扫描 ${gap} 条边；差异来自重复检查已经失败或饱和的分支。`
+          : '两种实现构造相同层次图并得到相同最大流；优化只改变 DFS 的扫描起点，不改变算法结果。';
+        views.base.render(s, baseEvent);
+        views.optimized.render(s, optimizedEvent);
+      }
+
+      function renderControls() {
+        const length = currentLength();
+        state.step = Math.min(state.step, length - 1);
+        el.slider.max = length - 1;
+        el.slider.value = state.step;
+        el.count.textContent = `${state.step + 1} / ${length}`;
+        el.first.disabled = state.step === 0;
+        el.prev.disabled = state.step === 0;
+      }
+
+      function render() {
+        renderControls();
+        if (state.mode === 'compare') renderCompare();
+        else renderSingle();
+      }
+
+      function setMode(mode) {
+        if (mode === 'compare' && !comparisonAvailable()) return;
+        stop();
+        state.mode = mode;
+        state.step = 0;
+        document.body.dataset.mode = mode;
+        el.algorithmField.style.display = mode === 'single' ? '' : 'none';
+        document.querySelectorAll('.mode-switch button').forEach(button => button.classList.toggle('active', button.dataset.mode === mode));
+        render();
+      }
+
+      function play() {
+        if (state.timer) return stop();
+        if (state.step >= currentLength() - 1) state.step = 0;
+        el.play.textContent = 'Ⅱ 暂停';
+        state.timer = setInterval(() => {
+          if (state.step >= currentLength() - 1) return stop();
+          state.step += 1;
+          render();
+        }, Number(el.speed.value));
+        render();
+      }
+
+      el.sample.addEventListener('change', () => {
+        stop();
+        state.sample = Number(el.sample.value);
+        state.algorithm = sample().id === 'current_arc' ? 1 : 0;
+        state.step = 0;
+        if (!comparisonAvailable()) state.mode = 'single';
+        document.body.dataset.mode = state.mode;
+        renderSelectors();
+        renderCase();
+        setMode(state.mode);
+      });
+      el.algorithm.addEventListener('change', () => {
+        stop();
+        state.algorithm = Number(el.algorithm.value);
+        state.step = 0;
+        render();
+      });
+      document.querySelectorAll('.mode-switch button').forEach(button => button.addEventListener('click', () => setMode(button.dataset.mode)));
+      el.first.addEventListener('click', () => { stop(); state.step = 0; render(); });
+      el.prev.addEventListener('click', () => { stop(); state.step = Math.max(0, state.step - 1); render(); });
+      el.play.addEventListener('click', play);
+      el.slider.addEventListener('input', () => { stop(); state.step = Number(el.slider.value); render(); });
+      el.speed.addEventListener('change', () => { if (state.timer) { stop(); play(); } });
+      document.addEventListener('keydown', event => {
+        if (['SELECT', 'INPUT'].includes(event.target.tagName)) return;
+        if (event.key === 'ArrowRight') { stop(); state.step = Math.min(currentLength() - 1, state.step + 1); render(); }
+        if (event.key === 'ArrowLeft') { stop(); state.step = Math.max(0, state.step - 1); render(); }
+        if (event.key === ' ') { event.preventDefault(); play(); }
+      });
+
+      renderSelectors();
+      renderCase();
+      render();
+    })();
+  </script>
+</body>
+</html>

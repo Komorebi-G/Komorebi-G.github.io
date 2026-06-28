@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+output/
+.playwright/
+.DS_Store
+*.log
+CLAUDE.md
+todo.md

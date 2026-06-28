@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+:root {
+  font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+  color: #11110f;
+  background: #ece9df;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; overflow-x: hidden; }
+a { color: inherit; }
+button, input { font: inherit; }
+::selection { color: #f4f0e6; background: #ff4f1f; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
