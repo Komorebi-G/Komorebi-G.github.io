@@ -54,6 +54,8 @@ main { min-width: 0; }
 .field textarea { padding: 14px; resize: vertical; }
 .field input:focus, .field textarea:focus, .field select:focus { border-color: #839688; box-shadow: 0 0 0 3px rgba(89,117,96,.1); }
 .field input[readonly] { color: #7f8179; background: #eeeeea; }
+.generated-id { display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 13px; color: #526158; background: #ecefea; border: 1px solid #d9dad4; border-radius: 8px; font: 12px/1 "IBM Plex Mono", monospace; }
+.generated-id small { margin: 0; color: #989b93; font: 9px/1 "Noto Serif SC", serif; }
 .field small { display: block; margin-top: 7px; color: #979990; font: 10px/1.5 "Noto Serif SC", serif; }
 .label-line { display: flex; align-items: center; justify-content: space-between; }
 .label-line > span { color: #999b93; font: 9px/1 "IBM Plex Mono", monospace; }

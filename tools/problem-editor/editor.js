@@ -49,21 +49,36 @@ function detectFromUrl(rawUrl) {
   try { url = new URL(rawUrl); } catch { return null; }
   const host = url.hostname.replace(/^www\./, "");
   const path = url.pathname;
-  let match;
-  if (host.includes("codeforces.com") && (match = path.match(/(?:contest|problemset\/problem)\/(\d+)\/(?:problem\/)?([a-z0-9]+)/i))) {
-    return { platform: "Codeforces", id: `cf-${match[1]}-${match[2].toLowerCase()}` };
+  if (host.includes("codeforces.com") && /(?:contest|problemset\/problem)\/\d+\/(?:problem\/)?[a-z0-9]+/i.test(path)) {
+    return { platform: "Codeforces" };
   }
-  if (host.includes("atcoder.jp") && (match = path.match(/contests\/([^/]+)\/tasks\/([^/]+)/i))) {
-    return { platform: "AtCoder", id: match[2].toLowerCase().replaceAll("_", "-") };
+  if (host.includes("atcoder.jp") && /contests\/[^/]+\/tasks\/[^/]+/i.test(path)) {
+    return { platform: "AtCoder" };
   }
-  if (host.includes("luogu.com.cn") && (match = path.match(/problem\/([a-z0-9]+)/i))) {
-    return { platform: "洛谷", id: `luogu-${match[1].toLowerCase()}` };
+  if (host.includes("luogu.com.cn") && /problem\/[a-z0-9]+/i.test(path)) {
+    return { platform: "洛谷" };
   }
   if (host.includes("nowcoder.com")) {
-    const parts = path.split("/").filter(Boolean);
-    return { platform: "牛客", id: `nowcoder-${parts.slice(-2).join("-").toLowerCase()}` };
+    return { platform: "牛客" };
   }
-  return { platform: host, id: "" };
+  return { platform: host };
+}
+
+function generatedIdForDate(date) {
+  if (originalId) return originalId;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "保存时自动生成";
+  const prefix = date.replaceAll("-", "");
+  const largest = problems.reduce((current, problem) => {
+    const match = problem.id.match(new RegExp(`^${prefix}-(\\d+)$`));
+    return match ? Math.max(current, Number(match[1])) : current;
+  }, 0);
+  return `${prefix}-${String(largest + 1).padStart(2, "0")}`;
+}
+
+function updateGeneratedId() {
+  const generated = generatedIdForDate(fields.solvedAt.value);
+  fields.id.value = generated === "保存时自动生成" ? "" : generated;
+  document.querySelector("#id-display").textContent = generated;
 }
 
 function markdownPreview(markdown) {
@@ -88,6 +103,7 @@ function inlineMarkdown(value) {
 }
 
 function updatePreview() {
+  updateGeneratedId();
   document.querySelector("#preview-title").textContent = fields.title.value || "题目名称";
   document.querySelector("#preview-platform").textContent = fields.platform.value || "PLATFORM";
   document.querySelector("#preview-date").textContent = fields.solvedAt.value || "DATE";
@@ -185,7 +201,6 @@ function fillForm(problem, isExisting = false) {
   for (const key of ["url", "title", "id", "platform", "solvedAt", "idea", "code", "language"]) {
     fields[key].value = problem[key] ?? (key === "language" ? "cpp" : "");
   }
-  fields.id.readOnly = isExisting;
   selectedTags.clear();
   for (const tag of problem.tags || []) selectedTags.add(tag);
   editorTitle.textContent = isExisting ? "编辑题目" : "新建题目";
@@ -264,7 +279,7 @@ async function saveProblem() {
     if (!response.ok) throw new Error(result.error || "保存失败");
     localStorage.removeItem(draftKey());
     originalId = result.id;
-    fields.id.readOnly = true;
+    updateGeneratedId();
     editorTitle.textContent = "编辑题目";
     setDirty(false);
     await refreshProblems();
@@ -291,7 +306,6 @@ fields.url.addEventListener("change", () => {
   const detected = detectFromUrl(fields.url.value);
   if (!detected) return;
   if (!fields.platform.value) fields.platform.value = detected.platform;
-  if (!fields.id.value && detected.id) fields.id.value = detected.id;
   markChanged();
 });
 fields.code.addEventListener("keydown", (event) => {

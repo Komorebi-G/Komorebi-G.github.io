@@ -55,7 +55,7 @@
             <div class="field full">
               <label for="url">原题链接</label>
               <input id="url" name="url" type="url" placeholder="粘贴 Codeforces、AtCoder、洛谷或牛客链接" required>
-              <small>粘贴后会自动识别平台和题目标识。</small>
+              <small>粘贴后会自动识别平台；题目标识由完成日期和当日编号生成。</small>
             </div>
 
             <div class="field-grid">
@@ -64,8 +64,12 @@
                 <input id="title" name="title" type="text" placeholder="Classy Numbers" required>
               </div>
               <div class="field">
-                <label for="id">题目标识</label>
-                <input id="id" name="id" type="text" placeholder="cf-1036-c" pattern="[a-z0-9][a-z0-9-]*" required>
+                <label>题目标识</label>
+                <input id="id" name="id" type="hidden">
+                <div class="generated-id">
+                  <span id="id-display">保存时自动生成</span>
+                  <small>不可编辑</small>
+                </div>
               </div>
               <div class="field">
                 <label for="platform">平台</label>

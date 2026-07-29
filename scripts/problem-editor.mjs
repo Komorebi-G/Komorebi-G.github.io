@@ -49,7 +49,6 @@ async function exists(path) {
 }
 
 function assertProblem(input) {
-  const id = String(input.id || "").trim().toLowerCase();
   const title = String(input.title || "").trim();
   const url = String(input.url || "").trim();
   const platform = String(input.platform || "").trim();
@@ -61,7 +60,6 @@ function assertProblem(input) {
     .map((tag) => String(tag).trim())
     .filter(Boolean))];
 
-  if (!idPattern.test(id)) throw new Error("题目标识只能使用小写字母、数字和连字符");
   if (!title) throw new Error("请填写题目名称");
   try {
     new URL(url);
@@ -75,7 +73,20 @@ function assertProblem(input) {
   if (!code) throw new Error("请填写代码");
   if (!languageExtensions[language]) throw new Error("不支持该代码语言");
 
-  return { id, title, url, platform, solvedAt, tags, idea, code, language };
+  return { title, url, platform, solvedAt, tags, idea, code, language };
+}
+
+async function getNextProblemId(solvedAt) {
+  const datePrefix = solvedAt.replaceAll("-", "");
+  const files = (await readdir(contentDir)).filter((file) => file.endsWith(".md"));
+  let largestSequence = 0;
+
+  for (const file of files) {
+    const match = file.slice(0, -3).match(new RegExp(`^${datePrefix}-(\\d+)$`));
+    if (match) largestSequence = Math.max(largestSequence, Number(match[1]));
+  }
+
+  return `${datePrefix}-${String(largestSequence + 1).padStart(2, "0")}`;
 }
 
 async function listProblems() {
@@ -122,13 +133,11 @@ function formatInputDate(value) {
 async function saveProblem(rawInput) {
   const input = assertProblem(rawInput);
   const originalId = String(rawInput.originalId || "").trim().toLowerCase();
-  if (originalId && originalId !== input.id) {
-    throw new Error("编辑已有题目时不能修改题目标识");
-  }
-
-  const markdownPath = join(contentDir, `${input.id}.md`);
   const editing = Boolean(originalId);
-  if (!editing && await exists(markdownPath)) throw new Error("这个题目标识已经存在");
+  if (editing && !idPattern.test(originalId)) throw new Error("已有题目标识无效");
+  const id = editing ? originalId : await getNextProblemId(input.solvedAt);
+  const markdownPath = join(contentDir, `${id}.md`);
+  if (!editing && await exists(markdownPath)) throw new Error("题目标识生成冲突，请重新保存");
 
   let createdAt = new Date().toISOString();
   let oldCodeFile = "";
@@ -141,7 +150,7 @@ async function saveProblem(rawInput) {
   }
 
   const extension = languageExtensions[input.language];
-  const codeFile = `${input.id}.${extension}`;
+  const codeFile = `${id}.${extension}`;
   const now = new Date().toISOString();
   const frontmatter = {
     title: input.title,
@@ -174,7 +183,7 @@ async function saveProblem(rawInput) {
   const refreshTime = new Date();
   await utimes(contentConfigPath, refreshTime, refreshTime);
 
-  return { id: input.id, updatedAt: now };
+  return { id, updatedAt: now };
 }
 
 const contentTypes = {
