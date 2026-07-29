@@ -20,6 +20,7 @@ let originalId = "";
 let dirty = false;
 let suggestionIndex = 0;
 let saveTimer;
+let autoDetectedPlatform = "";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const escapeHtml = (value) => String(value)
@@ -48,20 +49,12 @@ function detectFromUrl(rawUrl) {
   let url;
   try { url = new URL(rawUrl); } catch { return null; }
   const host = url.hostname.replace(/^www\./, "");
-  const path = url.pathname;
-  if (host.includes("codeforces.com") && /(?:contest|problemset\/problem)\/\d+\/(?:problem\/)?[a-z0-9]+/i.test(path)) {
-    return { platform: "Codeforces" };
-  }
-  if (host.includes("atcoder.jp") && /contests\/[^/]+\/tasks\/[^/]+/i.test(path)) {
-    return { platform: "AtCoder" };
-  }
-  if (host.includes("luogu.com.cn") && /problem\/[a-z0-9]+/i.test(path)) {
-    return { platform: "洛谷" };
-  }
-  if (host.includes("nowcoder.com")) {
-    return { platform: "牛客" };
-  }
-  return { platform: host };
+  const isHost = (domain) => host === domain || host.endsWith(`.${domain}`);
+  if (isHost("codeforces.com")) return { platform: "Codeforces" };
+  if (isHost("atcoder.jp")) return { platform: "AtCoder" };
+  if (isHost("luogu.com.cn")) return { platform: "洛谷" };
+  if (isHost("nowcoder.com")) return { platform: "牛客" };
+  return null;
 }
 
 function generatedIdForDate(date) {
@@ -198,9 +191,12 @@ function markChanged() {
 
 function fillForm(problem, isExisting = false) {
   originalId = isExisting ? problem.id : "";
+  autoDetectedPlatform = "";
   for (const key of ["url", "title", "id", "platform", "solvedAt", "idea", "code", "language"]) {
     fields[key].value = problem[key] ?? (key === "language" ? "cpp" : "");
   }
+  const detected = detectFromUrl(fields.url.value);
+  if (detected?.platform === fields.platform.value) autoDetectedPlatform = fields.platform.value;
   selectedTags.clear();
   for (const tag of problem.tags || []) selectedTags.add(tag);
   editorTitle.textContent = isExisting ? "编辑题目" : "新建题目";
@@ -296,17 +292,35 @@ async function init() {
   const tagResponse = await fetch("./api/tags").catch(() => null);
   if (tagResponse?.ok) catalog = await tagResponse.json();
   await refreshProblems();
-  newProblem();
+  const requestedId = new URLSearchParams(window.location.search).get("id");
+  if (requestedId && problems.some((problem) => problem.id === requestedId)) {
+    await loadProblem(requestedId);
+  } else {
+    newProblem();
+  }
 }
 
 for (const field of Object.values(fields)) {
   field.addEventListener("input", markChanged);
 }
-fields.url.addEventListener("change", () => {
+fields.url.addEventListener("input", () => {
   const detected = detectFromUrl(fields.url.value);
-  if (!detected) return;
-  if (!fields.platform.value) fields.platform.value = detected.platform;
+  if (!detected) {
+    if (autoDetectedPlatform && fields.platform.value === autoDetectedPlatform) {
+      fields.platform.value = "";
+      autoDetectedPlatform = "";
+      updatePreview();
+    }
+    return;
+  }
+  if (!fields.platform.value || fields.platform.value === autoDetectedPlatform) {
+    fields.platform.value = detected.platform;
+    autoDetectedPlatform = detected.platform;
+  }
   markChanged();
+});
+fields.platform.addEventListener("input", () => {
+  autoDetectedPlatform = "";
 });
 fields.code.addEventListener("keydown", (event) => {
   if (event.key !== "Tab") return;

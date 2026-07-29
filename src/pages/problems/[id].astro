@@ -52,6 +52,7 @@ interface Props {
 
 const { problem, code, related, previous, next } = Astro.props;
 const { Content } = await render(problem);
+const showEditor = import.meta.env.DEV;
 ---
 
 <BaseLayout
@@ -77,10 +78,22 @@ const { Content } = await render(problem);
               <a href={`/problems?tag=${encodeURIComponent(tag)}`}>{tag}</a>
             ))}
           </div>
-          <a class="source-link" href={problem.data.url} target="_blank" rel="noreferrer">
-            查看原题
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3h8v8M13 3 4 12" /></svg>
-          </a>
+          <div class="problem-actions">
+            {
+              showEditor && (
+                <a class="edit-link" href={`/editor/?id=${encodeURIComponent(problem.id)}`}>
+                  编辑该题目
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="m10.8 2.7 2.5 2.5M3 13l.7-3.2 7.8-7.8 2.5 2.5-7.8 7.8L3 13Z" />
+                  </svg>
+                </a>
+              )
+            }
+            <a class="source-link" href={problem.data.url} target="_blank" rel="noreferrer">
+              查看原题
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3h8v8M13 3 4 12" /></svg>
+            </a>
+          </div>
         </div>
       </header>
 
@@ -183,8 +196,10 @@ const { Content } = await render(problem);
   .tags { display: flex; flex-wrap: wrap; gap: 7px; }
   .tags a { padding: 7px 10px; color: #526359; background: #e9eeea; border-radius: 6px; font-size: 12px; text-decoration: none; }
   .tags a:hover { color: #fff; background: #5c7162; }
-  .source-link { display: flex; align-items: center; gap: 7px; color: #3c5543; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
-  .source-link svg { width: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+  .problem-actions { display: flex; align-items: center; gap: 18px; }
+  .source-link, .edit-link { display: flex; align-items: center; gap: 7px; color: #3c5543; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .source-link:hover, .edit-link:hover { color: #789080; }
+  .source-link svg, .edit-link svg { width: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
   .content-layout { padding-top: 72px; }
   .idea, .solution, .related { margin-bottom: 88px; }
   .section-label { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
