@@ -1,9 +1,18 @@
+---
+const path = Astro.url.pathname;
+const showEditor = import.meta.env.DEV;
+const isCurrent = (href: string) =>
+  href === "/" ? path === "/" : path.startsWith(href);
+---
+
 <header class="site-header">
   <nav aria-label="主导航">
     <a class="brand" href="/">LBH</a>
     <div class="links">
-      <a href="/">首页</a>
-      <a href="/algorithms">算法课程</a>
+      <a href="/" aria-current={isCurrent("/") ? "page" : undefined}>首页</a>
+      <a href="/problems" aria-current={isCurrent("/problems") ? "page" : undefined}>题目归档</a>
+      {showEditor && <a class="editor-link" href="/editor/">录入题目</a>}
+      <a href="/algorithms" aria-current={isCurrent("/algorithms") ? "page" : undefined}>算法课程</a>
     </div>
   </nav>
 </header>
@@ -15,9 +24,12 @@
   .links { display: flex; align-items: center; gap: 28px; }
   .links a { color: #666760; font-size: 14px; text-decoration: none; transition: color .2s ease; }
   .links a:hover { color: #222320; }
+  .links a[aria-current="page"] { color: #253b2b; font-weight: 600; }
+  .editor-link { padding: 7px 10px; color: #f7f7f4 !important; background: #536a59; border-radius: 6px; }
+  .editor-link:hover { background: #405647; }
   @media (max-width: 620px) {
     nav { width: min(100% - 32px, 1120px); height: 64px; }
-    .links { gap: 20px; }
-    .links a { font-size: 13px; }
+    .links { gap: 14px; }
+    .links a { font-size: 12px; }
   }
 </style>

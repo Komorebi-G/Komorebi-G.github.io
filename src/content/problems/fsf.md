@@ -1,0 +1,14 @@
+---
+title: test
+url: 'https://ac.nowcoder.com/acm/contest/133879/D'
+platform: 牛客
+solvedAt: '2026-07-29'
+tags:
+  - 博弈
+code: fsf.cpp
+language: cpp
+createdAt: '2026-07-29T14:27:56.042Z'
+updatedAt: '2026-07-29T14:28:30.628Z'
+draft: false
+---
+随便写的贪心。

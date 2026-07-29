@@ -1,0 +1,358 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Navbar from "../../components/Navbar.astro";
+import {
+  formatDate,
+  formatMonth,
+  getExcerpt,
+  getPublishedProblems,
+  normalizeSearchText,
+} from "../../lib/problems";
+
+const problems = getPublishedProblems(await getCollection("problems"));
+const tagCounts = new Map<string, number>();
+
+for (const problem of problems) {
+  for (const tag of problem.data.tags) {
+    tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+  }
+}
+
+const tags = [...tagCounts.entries()].sort((a, b) =>
+  a[0].localeCompare(b[0], "zh-CN"),
+);
+
+const groups = new Map<string, typeof problems>();
+for (const problem of problems) {
+  const key = formatMonth(problem.data.solvedAt);
+  const group = groups.get(key) ?? [];
+  group.push(problem);
+  groups.set(key, group);
+}
+---
+
+<BaseLayout
+  title="题目归档 — LBH"
+  description="按标签与时间整理的 ICPC 题目、思路和代码。"
+  themeColor="#f7f7f4"
+>
+  <div class="archive-page">
+    <Navbar />
+
+    <main>
+      <header class="page-header">
+        <p class="eyebrow">ICPC / PROBLEM ARCHIVE</p>
+        <div class="title-row">
+          <div>
+            <h1>题目归档</h1>
+            <p>以前做过的题，按标签和时间重新找到。</p>
+          </div>
+          <span class="total">{problems.length.toString().padStart(2, "0")} 题</span>
+        </div>
+      </header>
+
+      {
+        problems.length > 0 ? (
+          <>
+            <section class="controls" aria-label="检索与筛选">
+              <div class="search-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6.5" />
+                  <path d="m16 16 4 4" />
+                </svg>
+                <input
+                  id="problem-search"
+                  type="search"
+                  placeholder="搜索题目、标签或思路"
+                  autocomplete="off"
+                  aria-label="搜索题目"
+                />
+                <kbd>/</kbd>
+              </div>
+
+              <div class="filter-line">
+                <div class="tag-list" aria-label="按标签筛选">
+                  {tags.map(([tag, count]) => (
+                    <button class="tag-filter" type="button" data-tag={tag} aria-pressed="false">
+                      {tag}<span>{count}</span>
+                    </button>
+                  ))}
+                </div>
+                <button id="sort-toggle" class="sort-toggle" type="button" data-order="desc">
+                  <span>最新优先</span>
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M4.5 10.5 8 14l3.5-3.5" /></svg>
+                </button>
+              </div>
+
+              <div id="active-state" class="active-state" hidden>
+                <span id="result-count" aria-live="polite" />
+                <button id="clear-filters" type="button">清除筛选</button>
+              </div>
+            </section>
+
+            <section id="archive-list" class="archive-list" aria-label="题目列表">
+              {[...groups.entries()].map(([month, entries]) => (
+                <section class="month-group" data-month={entries[0].data.solvedAt.getTime()}>
+                  <h2>{month}</h2>
+                  <div class="month-entries">
+                    {entries.map((problem) => (
+                      <article
+                        class="problem-row"
+                        data-tags={JSON.stringify(problem.data.tags)}
+                        data-search={normalizeSearchText(
+                          [
+                            problem.data.title,
+                            problem.data.platform,
+                            ...problem.data.tags,
+                            problem.body ?? "",
+                          ].join(" "),
+                        )}
+                        data-time={problem.data.solvedAt.getTime()}
+                      >
+                        <time datetime={problem.data.solvedAt.toISOString()}>
+                          {formatDate(problem.data.solvedAt).slice(5)}
+                        </time>
+                        <a class="problem-main" href={`/problems/${problem.id}`}>
+                          <strong>{problem.data.title}</strong>
+                          <span>
+                            {problem.data.platform}
+                            {getExcerpt(problem.body ?? "") && <> · {getExcerpt(problem.body ?? "")}</>}
+                          </span>
+                        </a>
+                        <div class="row-tags">
+                          {problem.data.tags.map((tag) => (
+                            <button type="button" class="inline-tag" data-select-tag={tag}>{tag}</button>
+                          ))}
+                        </div>
+                        <a class="row-arrow" href={`/problems/${problem.id}`} aria-label={`查看 ${problem.data.title}`}>
+                          →
+                        </a>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </section>
+
+            <div id="no-results" class="no-results" hidden>
+              <strong>没有找到匹配的题目</strong>
+              <p>换一个关键词，或者减少已选择的标签。</p>
+              <button type="button" data-clear-all>清除筛选</button>
+            </div>
+          </>
+        ) : (
+          <section class="empty-archive">
+            <span>01</span>
+            <h2>从第一道题开始。</h2>
+            <p>题目归档目前还是空的。在本地运行编辑器，录入题目、思路和代码。</p>
+            <code>npm run problem:edit</code>
+          </section>
+        )
+      }
+    </main>
+
+    <footer><span>PROBLEM ARCHIVE</span><span>{problems.length} entries</span></footer>
+  </div>
+
+  <script>
+    const search = document.querySelector<HTMLInputElement>("#problem-search");
+    const rows = [...document.querySelectorAll<HTMLElement>(".problem-row")];
+    const groups = [...document.querySelectorAll<HTMLElement>(".month-group")];
+    const archive = document.querySelector<HTMLElement>("#archive-list");
+    const tagButtons = [...document.querySelectorAll<HTMLButtonElement>(".tag-filter")];
+    const activeState = document.querySelector<HTMLElement>("#active-state");
+    const resultCount = document.querySelector<HTMLElement>("#result-count");
+    const clearButton = document.querySelector<HTMLButtonElement>("#clear-filters");
+    const noResults = document.querySelector<HTMLElement>("#no-results");
+    const sortButton = document.querySelector<HTMLButtonElement>("#sort-toggle");
+    const selectedTags = new Set<string>();
+
+    const normalize = (value: string) => value.toLocaleLowerCase().replace(/\s+/g, "");
+
+    function syncUrl() {
+      const params = new URLSearchParams();
+      if (search?.value.trim()) params.set("q", search.value.trim());
+      for (const tag of selectedTags) params.append("tag", tag);
+      if (sortButton?.dataset.order === "asc") params.set("order", "asc");
+      const query = params.toString();
+      history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}`);
+    }
+
+    function applyFilters() {
+      const query = normalize(search?.value ?? "");
+      let visible = 0;
+
+      for (const row of rows) {
+        const tags: string[] = JSON.parse(row.dataset.tags ?? "[]");
+        const matchesQuery = !query || (row.dataset.search ?? "").includes(query);
+        const matchesTags = [...selectedTags].every((tag) => tags.includes(tag));
+        const show = matchesQuery && matchesTags;
+        row.hidden = !show;
+        if (show) visible += 1;
+      }
+
+      for (const group of groups) {
+        group.hidden = !group.querySelector(".problem-row:not([hidden])");
+      }
+
+      const filtering = Boolean(query || selectedTags.size);
+      if (activeState) activeState.hidden = !filtering;
+      if (resultCount) resultCount.textContent = `找到 ${visible} 道题`;
+      if (noResults) noResults.hidden = visible !== 0;
+      if (archive) archive.hidden = visible === 0;
+      syncUrl();
+    }
+
+    function setTag(tag: string, enabled = !selectedTags.has(tag)) {
+      if (enabled) selectedTags.add(tag);
+      else selectedTags.delete(tag);
+      for (const button of tagButtons) {
+        if (button.dataset.tag === tag) button.setAttribute("aria-pressed", String(enabled));
+      }
+      applyFilters();
+    }
+
+    function clearFilters() {
+      selectedTags.clear();
+      if (search) search.value = "";
+      for (const button of tagButtons) button.setAttribute("aria-pressed", "false");
+      applyFilters();
+      search?.focus();
+    }
+
+    search?.addEventListener("input", applyFilters);
+    tagButtons.forEach((button) => {
+      button.addEventListener("click", () => setTag(button.dataset.tag ?? ""));
+    });
+    document.querySelectorAll<HTMLButtonElement>("[data-select-tag]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setTag(button.dataset.selectTag ?? "", true);
+        document.querySelector(".controls")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    clearButton?.addEventListener("click", clearFilters);
+    document.querySelector("[data-clear-all]")?.addEventListener("click", clearFilters);
+
+    sortButton?.addEventListener("click", () => {
+      const ascending = sortButton.dataset.order !== "asc";
+      sortButton.dataset.order = ascending ? "asc" : "desc";
+      const label = sortButton.querySelector("span");
+      if (label) label.textContent = ascending ? "最早优先" : "最新优先";
+      const orderedGroups = [...groups].sort((a, b) => {
+        const diff = Number(a.dataset.month) - Number(b.dataset.month);
+        return ascending ? diff : -diff;
+      });
+      for (const group of orderedGroups) {
+        const entries = [...group.querySelectorAll<HTMLElement>(".problem-row")].sort((a, b) => {
+          const diff = Number(a.dataset.time) - Number(b.dataset.time);
+          return ascending ? diff : -diff;
+        });
+        group.querySelector(".month-entries")?.append(...entries);
+      }
+      archive?.append(...orderedGroups);
+      applyFilters();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const target = event.target as HTMLElement;
+      if (event.key === "/" && !["INPUT", "TEXTAREA"].includes(target.tagName)) {
+        event.preventDefault();
+        search?.focus();
+      }
+      if (event.key === "Escape" && document.activeElement === search) clearFilters();
+    });
+
+    document.querySelectorAll<HTMLAnchorElement>(".problem-main, .row-arrow").forEach((link) => {
+      link.addEventListener("click", () => {
+        sessionStorage.setItem("problemArchiveUrl", `${location.pathname}${location.search}`);
+        sessionStorage.setItem("problemArchiveScroll", String(window.scrollY));
+      });
+    });
+
+    const initial = new URLSearchParams(location.search);
+    if (search) search.value = initial.get("q") ?? "";
+    for (const tag of initial.getAll("tag")) setTag(tag, true);
+    if (initial.get("order") === "asc") sortButton?.click();
+    else applyFilters();
+    const savedScroll = Number(sessionStorage.getItem("problemArchiveScroll") || "0");
+    if (savedScroll) requestAnimationFrame(() => window.scrollTo(0, savedScroll));
+  </script>
+</BaseLayout>
+
+<style>
+  :global(body) { background: #f7f7f4; color: #222320; }
+  .archive-page { min-height: 100vh; }
+  main { width: min(1040px, calc(100% - 48px)); margin: 0 auto; padding: 84px 0 120px; }
+  .page-header { padding-bottom: 62px; }
+  .eyebrow { margin: 0 0 22px; color: #7e8078; font: 11px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
+  .title-row { display: flex; align-items: end; justify-content: space-between; gap: 32px; }
+  h1 { margin: 0; font-size: clamp(44px, 7vw, 72px); line-height: 1; letter-spacing: -.055em; font-weight: 650; }
+  .title-row p { margin: 22px 0 0; color: #686962; font: 400 16px/1.7 "Noto Serif SC", serif; }
+  .total { padding-bottom: 7px; color: #92938c; font: 12px/1 "IBM Plex Mono", monospace; white-space: nowrap; }
+  .controls { position: sticky; top: 12px; z-index: 10; margin-bottom: 58px; padding: 16px; background: rgba(247,247,244,.92); border: 1px solid #deded8; border-radius: 16px; box-shadow: 0 12px 36px rgba(32,34,29,.055); backdrop-filter: blur(14px); }
+  .search-wrap { position: relative; display: flex; align-items: center; }
+  .search-wrap svg { position: absolute; left: 16px; width: 18px; fill: none; stroke: #777972; stroke-width: 1.7; }
+  .search-wrap input { width: 100%; height: 50px; padding: 0 52px 0 47px; color: #242520; background: #fff; border: 1px solid #d9d9d3; border-radius: 10px; outline: none; font-size: 15px; transition: border-color .2s, box-shadow .2s; }
+  .search-wrap input:focus { border-color: #718474; box-shadow: 0 0 0 3px rgba(100,126,106,.12); }
+  .search-wrap kbd { position: absolute; right: 14px; display: grid; place-items: center; width: 24px; height: 24px; color: #8a8b84; background: #f2f2ee; border: 1px solid #deded8; border-radius: 5px; font: 11px/1 "IBM Plex Mono", monospace; }
+  .filter-line { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-top: 13px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 7px; }
+  button { cursor: pointer; }
+  .tag-filter { padding: 7px 10px; color: #62645d; background: transparent; border: 1px solid #d9d9d3; border-radius: 7px; font-size: 12px; transition: .18s ease; }
+  .tag-filter span { margin-left: 6px; color: #9a9b94; font: 10px/1 "IBM Plex Mono", monospace; }
+  .tag-filter:hover { color: #2d3e31; border-color: #aeb9b0; }
+  .tag-filter[aria-pressed="true"] { color: #f7f7f4; background: #536a59; border-color: #536a59; }
+  .tag-filter[aria-pressed="true"] span { color: #dce5de; }
+  .sort-toggle { display: flex; align-items: center; gap: 7px; min-width: max-content; padding: 7px 8px; color: #6d6e68; background: none; border: 0; font-size: 12px; }
+  .sort-toggle svg { width: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+  .sort-toggle[data-order="asc"] svg { transform: rotate(180deg); }
+  .active-state { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; padding-top: 12px; border-top: 1px solid #e4e4de; color: #7d7e77; font-size: 12px; }
+  .active-state[hidden] { display: none; }
+  .active-state button, .no-results button { padding: 0; color: #4d6754; background: none; border: 0; font-weight: 600; }
+  .archive-list { border-top: 1px solid #cacbc4; }
+  .month-group { display: grid; grid-template-columns: 140px 1fr; border-bottom: 1px solid #d7d8d1; }
+  .month-group[hidden], .problem-row[hidden] { display: none; }
+  .month-group h2 { position: sticky; top: 150px; align-self: start; margin: 0; padding: 29px 20px 29px 4px; color: #777971; font-size: 13px; font-weight: 500; }
+  .month-entries { min-width: 0; }
+  .problem-row { display: grid; grid-template-columns: 52px minmax(240px,1fr) minmax(160px,.7fr) 24px; gap: 18px; align-items: center; min-height: 112px; padding: 24px 4px; border-bottom: 1px solid #e1e1dc; }
+  .problem-row:last-child { border-bottom: 0; }
+  .problem-row time { align-self: start; padding-top: 3px; color: #96978f; font: 11px/1 "IBM Plex Mono", monospace; }
+  .problem-main { min-width: 0; text-decoration: none; }
+  .problem-main strong { display: block; overflow: hidden; font-size: 20px; line-height: 1.3; letter-spacing: -.025em; text-overflow: ellipsis; white-space: nowrap; }
+  .problem-main span { display: -webkit-box; margin-top: 8px; overflow: hidden; color: #777871; font: 400 12px/1.65 "Noto Serif SC", serif; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+  .row-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .inline-tag { padding: 5px 7px; color: #637067; background: #edf0ec; border: 0; border-radius: 5px; font-size: 11px; }
+  .inline-tag:hover { color: #fff; background: #627668; }
+  .row-arrow { color: #8a8c84; text-decoration: none; transition: transform .18s, color .18s; }
+  .problem-row:hover .row-arrow { color: #304c38; transform: translateX(4px); }
+  .no-results { padding: 90px 20px; text-align: center; }
+  .no-results[hidden] { display: none; }
+  .no-results strong { display: block; font-size: 22px; }
+  .no-results p { margin: 12px 0 22px; color: #787a72; font: 14px/1.7 "Noto Serif SC", serif; }
+  .empty-archive { padding: 72px; background: #fff; border: 1px solid #dfdfd9; border-radius: 18px; }
+  .empty-archive > span { color: #999a93; font: 11px/1 "IBM Plex Mono", monospace; }
+  .empty-archive h2 { margin: 70px 0 16px; font-size: clamp(30px, 4vw, 44px); letter-spacing: -.04em; }
+  .empty-archive p { max-width: 520px; color: #6e7068; font: 15px/1.8 "Noto Serif SC", serif; }
+  .empty-archive code { display: inline-block; margin-top: 24px; padding: 11px 14px; color: #35513d; background: #edf1ed; border-radius: 7px; font: 12px/1 "IBM Plex Mono", monospace; }
+  footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #8b8c85; border-top: 1px solid #deddd8; font: 11px/1 "IBM Plex Mono", monospace; }
+  @media (max-width: 780px) {
+    main, footer { width: min(100% - 32px, 1040px); }
+    main { padding: 60px 0 80px; }
+    .page-header { padding-bottom: 42px; }
+    .title-row { align-items: start; }
+    .title-row p { max-width: 260px; font-size: 14px; }
+    .controls { top: 6px; padding: 10px; margin-bottom: 40px; }
+    .filter-line { display: block; }
+    .tag-list { max-height: 78px; overflow: auto; }
+    .sort-toggle { margin: 8px 0 0 auto; }
+    .month-group { display: block; }
+    .month-group h2 { position: static; padding: 22px 4px 10px; border-bottom: 1px solid #e1e1dc; }
+    .problem-row { grid-template-columns: 44px minmax(0,1fr) 20px; min-height: 98px; gap: 10px; }
+    .row-tags { grid-column: 2; justify-content: flex-start; margin-top: -12px; }
+    .row-arrow { grid-column: 3; grid-row: 1; }
+    .problem-main strong { font-size: 18px; }
+    .empty-archive { padding: 38px 28px; }
+    .empty-archive h2 { margin-top: 50px; }
+  }
+</style>

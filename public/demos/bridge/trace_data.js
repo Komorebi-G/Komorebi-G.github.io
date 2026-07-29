@@ -297,14 +297,14 @@ window.BRIDGE_LAB = (() => {
     push(Array(sample.edges.length).fill("neutral"),{phase:"init",title:"初始化两个并查集",detail:"每个顶点各自构成连通块和 2-边连通分量。",line:0});
     sample.edges.forEach(e=>{
       work++;let a=find2(e.u),b=find2(e.v),type,line,title,detail;
-      if(a===b){type="inside";line=2;title=`e${e.id} 已在同一 2ECC`;detail:"桥数量不变。"}
+      if(a===b){type="inside";line=2;title=`e${e.id} 已在同一 2ECC`;detail="桥数量不变。"}
       else{
         let ca=findCC(a),cb=findCC(b);
         if(ca!==cb){
           type="connect";line=4;bridges++;components--;
           if(ccSize[ca]>ccSize[cb]){[a,b]=[b,a];[ca,cb]=[cb,ca]}
           makeRoot(a);parent[a]=b;dsuCC[a]=b;ccSize[cb]+=ccSize[a];
-          title=`e${e.id} 连接两个连通块`;detail:"新边当前是桥，bridges + 1。";
+          title=`e${e.id} 连接两个连通块`;detail="新边当前是桥，bridges + 1。";
         }else{
           type="merge";line=7;const before=bridges,lca=mergePath(a,b);
           title=`e${e.id} 闭合一个环`;detail=`在 LCA ${lca} 汇合，${before-bridges} 条旧桥失效。`;

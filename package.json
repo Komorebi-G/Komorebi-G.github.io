@@ -4,8 +4,10 @@
   "version": "0.1.0",
   "scripts": {
     "sync:demos": "node scripts/sync-demos.mjs",
+    "problem:edit": "node scripts/problem-editor.mjs",
     "predev": "npm run sync:demos",
-    "dev": "astro dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:site": "astro dev",
     "prebuild": "npm run sync:demos",
     "build": "astro check && astro build",
     "build:pages": "astro check && astro build",
@@ -14,10 +16,12 @@
   "dependencies": {
     "@astrojs/check": "^0.9.4",
     "astro": "^5.7.0",
+    "gray-matter": "^4.0.3",
     "typescript": "^5.7.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^24.13.3",
     "tailwindcss": "^4.1.0"
   }
 }

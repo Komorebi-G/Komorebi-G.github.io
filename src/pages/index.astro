@@ -16,16 +16,43 @@ import Navbar from "../components/Navbar.astro";
         <p class="eyebrow">个人网站</p>
         <h1>你好，我是 LBH。</h1>
         <p class="summary">
-          这里用来整理课程项目、技术实验和学习过程。内容还在逐步增加，
-          目前可以查看算法设计课程的交互演示。
+          这里用来整理 ICPC 题目、课程项目和学习过程。做过的题按标签与时间归档，
+          也保留算法设计课程的交互演示。
         </p>
       </section>
 
       <section class="current" aria-labelledby="current-title">
         <div class="section-heading">
           <h2 id="current-title">目前的内容</h2>
-          <span>01</span>
+          <span>02</span>
         </div>
+
+        <div class="content-list">
+        <a class="course-card archive-card" href="/problems">
+          <div class="card-copy">
+            <span class="card-label">ICPC / 个人归档</span>
+            <h3>题目与思路</h3>
+            <p>按照标签和时间整理做过的题，在需要的时候快速找到思路与代码。</p>
+            <span class="open-link">打开题目归档 <b>→</b></span>
+          </div>
+
+          <div class="archive-visual" aria-hidden="true">
+            <div class="visual-search">
+              <svg viewBox="0 0 18 18"><circle cx="8" cy="8" r="4.5"/><path d="m11.5 11.5 3.5 3.5"/></svg>
+              <span>搜索题目、标签或思路</span>
+              <kbd>/</kbd>
+            </div>
+            <div class="visual-tags">
+              <span>数位 DP</span><span>前缀和</span><span>差分</span><span>图论</span>
+            </div>
+            <div class="visual-row">
+              <time>07-26</time><strong>Classy Numbers</strong><span>数位 DP</span>
+            </div>
+            <div class="visual-row faded">
+              <time>07-18</time><strong>Problem Archive</strong><span>二分</span>
+            </div>
+          </div>
+        </a>
 
         <a class="course-card" href="/algorithms">
           <div class="card-copy">
@@ -53,6 +80,7 @@ import Navbar from "../components/Navbar.astro";
             <span>TRACE / STEP 24</span>
           </div>
         </a>
+        </div>
       </section>
     </main>
 
@@ -75,7 +103,8 @@ import Navbar from "../components/Navbar.astro";
   .section-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 0 18px; border-bottom: 1px solid #d4d4ce; }
   .section-heading h2 { margin: 0; font-size: 14px; font-weight: 600; }
   .section-heading span { color: #8a8b84; font: 12px/1 "IBM Plex Mono", monospace; }
-  .course-card { display: grid; grid-template-columns: .9fr 1.1fr; min-height: 340px; margin-top: 30px; color: inherit; background: #fff; border: 1px solid #e1e1dc; border-radius: 18px; overflow: hidden; text-decoration: none; box-shadow: 0 10px 35px rgba(28,30,25,.045); transition: transform .25s ease, box-shadow .25s ease; }
+  .content-list { display: grid; gap: 24px; margin-top: 30px; }
+  .course-card { display: grid; grid-template-columns: .9fr 1.1fr; min-height: 340px; color: inherit; background: #fff; border: 1px solid #e1e1dc; border-radius: 18px; overflow: hidden; text-decoration: none; box-shadow: 0 10px 35px rgba(28,30,25,.045); transition: transform .25s ease, box-shadow .25s ease; }
   .course-card:hover { transform: translateY(-3px); box-shadow: 0 18px 48px rgba(28,30,25,.075); }
   .card-copy { display: flex; flex-direction: column; align-items: flex-start; padding: 48px; }
   .card-label { color: #777972; font-size: 12px; }
@@ -91,6 +120,18 @@ import Navbar from "../components/Navbar.astro";
   .route path { fill: none; stroke-dasharray: 600; animation: draw-route 4.5s ease-in-out infinite alternate; }
   .pulse { transform-origin: 400px 40px; animation: node-pulse 2s ease-in-out infinite; }
   .card-visual > span { position: absolute; right: 22px; bottom: 18px; color: #858c84; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .08em; }
+  .archive-visual { display: flex; flex-direction: column; justify-content: center; gap: 11px; padding: clamp(28px, 5vw, 58px); background: #edf1ed; border-left: 1px solid #e1e1dc; }
+  .visual-search { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; color: #858a83; background: #fff; border: 1px solid #d8ddd8; border-radius: 8px; font-size: 11px; }
+  .visual-search svg { width: 15px; fill: none; stroke: currentColor; }
+  .visual-search span { flex: 1; }
+  .visual-search kbd { display: grid; place-items: center; width: 22px; height: 22px; background: #f2f3f0; border: 1px solid #e0e2de; border-radius: 4px; font: 9px/1 "IBM Plex Mono", monospace; }
+  .visual-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .visual-tags span { padding: 6px 8px; color: #53695a; background: #dfe8e1; border-radius: 5px; font-size: 10px; }
+  .visual-row { display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; padding: 14px 4px; border-bottom: 1px solid #d6ddd7; }
+  .visual-row time { color: #92978f; font: 9px/1 "IBM Plex Mono", monospace; }
+  .visual-row strong { font-size: 13px; }
+  .visual-row > span { padding: 4px 6px; color: #637267; background: #e4ebe5; border-radius: 4px; font-size: 9px; }
+  .visual-row.faded { opacity: .55; }
   footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #8b8c85; border-top: 1px solid #deddd8; font-size: 12px; }
   @keyframes draw-route { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
   @keyframes node-pulse { 50% { transform: scale(1.45); opacity: .55; } }
@@ -102,5 +143,6 @@ import Navbar from "../components/Navbar.astro";
     .course-card { grid-template-columns: 1fr; }
     .card-copy { min-height: 300px; padding: 30px; }
     .card-visual { min-height: 230px; border-top: 1px solid #e1e1dc; border-left: 0; }
+    .archive-visual { min-height: 250px; border-top: 1px solid #e1e1dc; border-left: 0; }
   }
 </style>

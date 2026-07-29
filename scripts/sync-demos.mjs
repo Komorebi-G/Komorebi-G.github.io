@@ -2,7 +2,7 @@ import { cp, mkdir, readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const sourceRoot = join(homedir(), "lesson", "Algorithm");
+const sourceRoot = join(homedir(), "courses", "Algorithm");
 const targetRoot = join(process.cwd(), "public", "demos");
 
 const experiments = [

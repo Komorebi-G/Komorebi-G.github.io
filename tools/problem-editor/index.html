@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目编辑器 — LBH</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2353695a'/%3E%3Cpath d='M17 18h9v21h20v8H17z' fill='white'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./editor.css">
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <header>
+          <div>
+            <span class="mark">LBH</span>
+            <p>Problem Editor</p>
+          </div>
+          <button id="new-problem" class="icon-button" type="button" title="新建题目（Ctrl+N）">＋</button>
+        </header>
+
+        <label class="list-search">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="m13 13 4 4"/></svg>
+          <input id="list-search" type="search" placeholder="搜索已有题目">
+        </label>
+        <div id="problem-list" class="problem-list"></div>
+        <footer><span id="archive-count">0 道题</span><span>LOCAL ONLY</span></footer>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <button id="mobile-list" class="mobile-list" type="button">题目列表</button>
+          <div class="save-state">
+            <span id="state-dot"></span>
+            <span id="save-state">尚未修改</span>
+          </div>
+          <div class="top-actions">
+            <button id="clear-draft" type="button">放弃修改</button>
+            <button id="save-problem" class="primary" type="button">
+              保存题目
+              <kbd>Ctrl S</kbd>
+            </button>
+          </div>
+        </header>
+
+        <form id="problem-form" novalidate>
+          <section class="editor-pane">
+            <div class="editor-heading">
+              <p>NEW / EDIT PROBLEM</p>
+              <h1 id="editor-title">新建题目</h1>
+            </div>
+
+            <div class="field full">
+              <label for="url">原题链接</label>
+              <input id="url" name="url" type="url" placeholder="粘贴 Codeforces、AtCoder、洛谷或牛客链接" required>
+              <small>粘贴后会自动识别平台和题目标识。</small>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="title">题目名称</label>
+                <input id="title" name="title" type="text" placeholder="Classy Numbers" required>
+              </div>
+              <div class="field">
+                <label for="id">题目标识</label>
+                <input id="id" name="id" type="text" placeholder="cf-1036-c" pattern="[a-z0-9][a-z0-9-]*" required>
+              </div>
+              <div class="field">
+                <label for="platform">平台</label>
+                <input id="platform" name="platform" type="text" placeholder="Codeforces" required>
+              </div>
+              <div class="field">
+                <label for="solvedAt">完成时间</label>
+                <input id="solvedAt" name="solvedAt" type="date" required>
+              </div>
+            </div>
+
+            <div class="field full tag-field">
+              <label for="tag-input">标签</label>
+              <div id="selected-tags" class="selected-tags"></div>
+              <input id="tag-input" type="text" placeholder="输入标签后按回车">
+              <div id="tag-suggestions" class="tag-suggestions" hidden></div>
+              <small>使用统一标签可以让以后检索更准确。</small>
+            </div>
+
+            <div class="field full">
+              <div class="label-line">
+                <label for="idea">解题思路</label>
+                <span>Markdown</span>
+              </div>
+              <textarea id="idea" name="idea" class="idea-input" placeholder="写下核心思路、关键状态和容易忘记的细节……" required></textarea>
+            </div>
+
+            <div class="field full">
+              <div class="label-line">
+                <label for="code">代码</label>
+                <select id="language" name="language" aria-label="代码语言">
+                  <option value="cpp">C++</option>
+                  <option value="c">C</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="rust">Rust</option>
+                  <option value="text">Text</option>
+                </select>
+              </div>
+              <textarea id="code" name="code" class="code-input" spellcheck="false" placeholder="#include <bits/stdc++.h>"></textarea>
+            </div>
+          </section>
+
+          <aside class="preview-pane">
+            <div class="preview-label">LIVE PREVIEW</div>
+            <article id="preview">
+              <div class="preview-meta"><span id="preview-platform">PLATFORM</span><span id="preview-date">DATE</span></div>
+              <h2 id="preview-title">题目名称</h2>
+              <div id="preview-tags" class="preview-tags"></div>
+              <div class="preview-section">
+                <span>01</span><strong>思路</strong>
+              </div>
+              <div id="preview-idea" class="preview-copy"><p>解题思路会显示在这里。</p></div>
+              <div class="preview-section">
+                <span>02</span><strong>代码</strong>
+              </div>
+              <pre><code id="preview-code">// 代码预览</code></pre>
+            </article>
+          </aside>
+        </form>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./editor.js"></script>
+  </body>
+</html>
