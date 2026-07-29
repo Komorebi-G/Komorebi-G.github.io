@@ -106,6 +106,24 @@ async function listProblems() {
   return problems.sort((a, b) => String(b.solvedAt).localeCompare(String(a.solvedAt)));
 }
 
+async function listUsedTags() {
+  const counts = new Map();
+  for (const problem of await listProblems()) {
+    for (const tag of new Set(problem.tags)) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .sort(([nameA, countA], [nameB, countB]) =>
+      countB - countA || nameA.localeCompare(nameB, "zh-CN")
+    )
+    .map(([name, count]) => ({
+      name,
+      count,
+      group: `${count} 道题`,
+    }));
+}
+
 async function readProblem(id) {
   if (!idPattern.test(id)) throw new Error("无效的题目标识");
   const markdownPath = join(contentDir, `${id}.md`);
@@ -200,8 +218,7 @@ const server = createServer(async (request, response) => {
       return sendJson(response, 200, await listProblems());
     }
     if (request.method === "GET" && requestUrl.pathname === "/api/tags") {
-      const tags = JSON.parse(await readFile(join(projectRoot, "src", "data", "tags.json"), "utf8"));
-      return sendJson(response, 200, tags);
+      return sendJson(response, 200, await listUsedTags());
     }
     if (request.method === "GET" && requestUrl.pathname.startsWith("/api/problems/")) {
       const id = decodeURIComponent(requestUrl.pathname.slice("/api/problems/".length));
