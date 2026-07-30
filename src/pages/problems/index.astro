@@ -13,6 +13,7 @@ import { findTopicForTag, getPublishedTopics } from "../../lib/topics";
 
 const problems = getPublishedProblems(await getCollection("problems"));
 const topics = getPublishedTopics(await getCollection("topics"));
+const showEditor = import.meta.env.DEV;
 const tagCounts = new Map<string, number>();
 
 for (const problem of problems) {
@@ -61,7 +62,16 @@ for (const problem of problems) {
             <h1>题目归档</h1>
             <p>以前做过的题，按标签和时间重新找到。</p>
           </div>
-          <span class="total">{problems.length.toString().padStart(2, "0")} 题</span>
+          <div class="archive-actions">
+            <span class="total">{problems.length.toString().padStart(2, "0")} 题</span>
+            {
+              showEditor && (
+                <a class="editor-link" href="/editor/">
+                  <span>＋</span> 录入题目
+                </a>
+              )
+            }
+          </div>
         </div>
       </header>
 
@@ -338,7 +348,11 @@ for (const problem of problems) {
   .title-row { display: flex; align-items: end; justify-content: space-between; gap: 32px; }
   h1 { margin: 0; font-size: clamp(44px, 7vw, 72px); line-height: 1; letter-spacing: -.055em; font-weight: 650; }
   .title-row p { margin: 22px 0 0; color: #686962; font: 400 16px/1.7 "Noto Serif SC", serif; }
+  .archive-actions { display: flex; align-items: center; gap: 18px; padding-bottom: 1px; }
   .total { padding-bottom: 7px; color: #92938c; font: 12px/1 "IBM Plex Mono", monospace; white-space: nowrap; }
+  .editor-link { display: inline-flex; align-items: center; gap: 7px; padding: 10px 13px; color: #f7f7f4; background: #536a59; border-radius: 8px; font-size: 12px; text-decoration: none; white-space: nowrap; transition: background .18s ease, transform .18s ease; }
+  .editor-link span { font-size: 16px; line-height: .7; }
+  .editor-link:hover { background: #405647; transform: translateY(-1px); }
   .controls { position: sticky; top: 12px; z-index: 10; margin-bottom: 58px; padding: 16px; background: rgba(247,247,244,.92); border: 1px solid #deded8; border-radius: 16px; box-shadow: 0 12px 36px rgba(32,34,29,.055); backdrop-filter: blur(14px); }
   .search-wrap { position: relative; display: flex; align-items: center; }
   .search-wrap svg { position: absolute; left: 16px; width: 18px; fill: none; stroke: #777972; stroke-width: 1.7; }
@@ -395,6 +409,7 @@ for (const problem of problems) {
     .page-header { padding-bottom: 42px; }
     .title-row { align-items: start; }
     .title-row p { max-width: 260px; font-size: 14px; }
+    .archive-actions { flex-direction: column-reverse; align-items: flex-end; gap: 12px; }
     .controls { top: 6px; padding: 10px; margin-bottom: 40px; }
     .filter-line { display: block; }
     .tag-list { max-height: 78px; overflow: auto; }
@@ -407,5 +422,10 @@ for (const problem of problems) {
     .problem-main strong { font-size: 18px; }
     .empty-archive { padding: 38px 28px; }
     .empty-archive h2 { margin-top: 50px; }
+  }
+  @media (max-width: 480px) {
+    .title-row { display: block; }
+    .archive-actions { flex-direction: row-reverse; justify-content: flex-end; align-items: center; margin-top: 24px; }
+    .total { padding-bottom: 0; }
   }
 </style>
