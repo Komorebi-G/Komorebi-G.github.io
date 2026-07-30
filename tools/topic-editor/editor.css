@@ -1,10 +1,5 @@
-.list-filter { display: flex; gap: 4px; margin: -4px 0 10px; }
-.list-filter button { flex: 1; padding: 5px 2px; color: #85877f; background: transparent; border: 0; border-radius: 5px; font-size: 9px; }
-.list-filter button[aria-pressed="true"] { color: #44594a; background: rgba(255,255,255,.7); font-weight: 600; }
-.topic-item { position: relative; padding-right: 54px; }
-.topic-item .topic-state { position: absolute; top: 13px; right: 9px; padding: 4px 5px; color: #8d8f88; background: #e1e3de; border-radius: 4px; font: 8px/1 "IBM Plex Mono", monospace; }
-.topic-item.written .topic-state { color: #477055; background: #e2ece4; }
-.topic-item span em { color: #657269; font-style: normal; }
+.top-actions .danger { color: #955148; }
+.top-actions .danger:hover { color: #fff; background: #955148; }
 .top-actions a { display: flex; align-items: center; height: 36px; padding: 0 11px; color: #58675d; border-radius: 7px; font-size: 11px; text-decoration: none; }
 .top-actions a:hover { background: #e8e9e4; }
 .top-actions a[hidden] { display: none; }

@@ -19,6 +19,7 @@
             <span class="mark">LBH</span>
             <p>Knowledge Editor</p>
           </div>
+          <button id="new-topic" class="icon-button" type="button" title="新建标签知识点（Ctrl+N）">＋</button>
         </header>
 
         <nav class="editor-switch" aria-label="编辑器类型">
@@ -28,15 +29,10 @@
 
         <label class="list-search">
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="m13 13 4 4"/></svg>
-          <input id="list-search" type="search" placeholder="搜索标签或已有专题">
+          <input id="list-search" type="search" placeholder="搜索知识点">
         </label>
-        <div class="list-filter">
-          <button type="button" data-list-filter="all" aria-pressed="true">全部</button>
-          <button type="button" data-list-filter="written" aria-pressed="false">已整理</button>
-          <button type="button" data-list-filter="pending" aria-pressed="false">待整理</button>
-        </div>
         <div id="topic-list" class="problem-list"></div>
-        <footer><span id="topic-count">0 个标签</span><span>LOCAL ONLY</span></footer>
+        <footer><span id="topic-count">0 个知识点</span><span>LOCAL ONLY</span></footer>
       </aside>
 
       <main>
@@ -48,6 +44,7 @@
           </div>
           <div class="top-actions">
             <a id="view-topic" href="/topics" target="_blank" hidden>查看网页</a>
+            <button id="delete-topic" class="danger" type="button" hidden>删除</button>
             <button id="clear-draft" type="button">放弃修改</button>
             <button id="save-topic" class="primary" type="button">
               保存知识点
@@ -61,6 +58,13 @@
             <div class="editor-heading">
               <p>TAG KNOWLEDGE</p>
               <h1 id="editor-title">选择一个标签</h1>
+            </div>
+
+            <div id="new-topic-name" class="field full" hidden>
+              <label for="topic-name">新标签名称</label>
+              <input id="topic-name" type="text" list="known-tags" placeholder="例如：莫队" autocomplete="off">
+              <datalist id="known-tags"></datalist>
+              <small>可选择题目已经使用的标签，也可以创建新标签；保存后会出现在题目录入的标签建议中。</small>
             </div>
 
             <div class="field full">

@@ -7,11 +7,13 @@ const saveStateText = document.querySelector("#save-state");
 const editorTitle = document.querySelector("#editor-title");
 const sidebar = document.querySelector(".sidebar");
 const viewTopic = document.querySelector("#view-topic");
-let candidates = [];
+const deleteButton = document.querySelector("#delete-topic");
+const topicNameGroup = document.querySelector("#new-topic-name");
+const topicNameField = document.querySelector("#topic-name");
+let topics = [];
 let currentId = "";
 let currentTag = "";
 let currentTitle = "";
-let activeListFilter = "all";
 let dirty = false;
 let saveTimer;
 
@@ -139,21 +141,23 @@ function markdownPreview(markdown) {
 }
 
 function updatePreview() {
-  editorTitle.textContent = currentTitle || "选择一个标签";
-  document.querySelector("#preview-title").textContent = currentTitle || "专题名称";
+  const title = currentId ? currentTitle : topicNameField.value.trim();
+  editorTitle.textContent = currentId ? currentTitle : "新建标签知识点";
+  document.querySelector("#preview-title").textContent = title || "新标签";
   document.querySelector("#preview-content").innerHTML = markdownPreview(field.value);
   viewTopic.hidden = !currentId;
+  deleteButton.hidden = !currentId;
   if (currentId) viewTopic.href = `/topics/${encodeURIComponent(currentId)}`;
 }
 
 function draftKey() {
-  return `topic-editor:${currentId || `tag:${normalize(currentTag)}`}`;
+  return `topic-editor:${currentId || "new"}`;
 }
 
 function currentData() {
   return {
     originalId: currentId,
-    tag: currentTag,
+    tag: currentId ? currentTag : topicNameField.value.trim(),
     content: field.value,
   };
 }
@@ -189,12 +193,14 @@ function applyTopic(topic, candidateName, isExisting) {
   currentId = isExisting ? topic.id : "";
   currentTag = candidateName || topic.title;
   currentTitle = topic.title || candidateName;
+  topicNameGroup.hidden = isExisting;
+  topicNameField.value = isExisting ? "" : currentTitle;
   field.value = topic.content || blankContent();
   updatePreview();
   setDirty(false);
   renderTopicList();
   sidebar.classList.remove("open");
-  field.focus();
+  (isExisting ? field : topicNameField).focus();
 }
 
 async function loadTopic(id, candidateName = "") {
@@ -213,80 +219,96 @@ async function loadTopic(id, candidateName = "") {
   applyTopic(topic, candidateName || topic.title, true);
 }
 
-function startCandidate(candidate) {
+function newTopic(restoreDraft = true) {
   if (dirty && !confirm("当前修改尚未保存，确定切换标签吗？")) return;
-  const draftKeyForTag = `topic-editor:tag:${normalize(candidate.name)}`;
+  currentId = "";
+  currentTag = "";
+  currentTitle = "";
+  topicNameGroup.hidden = false;
+  topicNameField.value = "";
   let content = blankContent();
-  const savedDraft = localStorage.getItem(draftKeyForTag);
+  const savedDraft = restoreDraft ? localStorage.getItem("topic-editor:new") : null;
   if (savedDraft) {
     try {
-      if (confirm("找到这个标签的本地草稿，是否恢复？")) {
-        content = JSON.parse(savedDraft).content ?? content;
+      if (confirm("找到尚未保存的新知识点草稿，是否恢复？")) {
+        const draft = JSON.parse(savedDraft);
+        topicNameField.value = draft.tag ?? "";
+        content = draft.content ?? content;
       }
     } catch {}
   }
-  applyTopic({ title: candidate.name, content }, candidate.name, false);
-}
-
-function openCandidate(candidate) {
-  return candidate.topicId
-    ? loadTopic(candidate.topicId, candidate.name)
-    : startCandidate(candidate);
+  field.value = content;
+  updatePreview();
+  setDirty(false);
+  renderTopicList();
+  sidebar.classList.remove("open");
+  topicNameField.focus();
 }
 
 function renderTopicList() {
   const query = listSearch.value.trim().toLocaleLowerCase();
-  const visible = candidates.filter((candidate) => {
-    const matchesSearch = [candidate.name, ...(candidate.aliases || [])]
-      .join(" ").toLocaleLowerCase().includes(query);
-    const matchesFilter = activeListFilter === "all"
-      || (activeListFilter === "written" ? candidate.topicId : !candidate.topicId);
-    return matchesSearch && matchesFilter;
-  });
+  const visible = topics.filter((topic) =>
+    [topic.name, ...(topic.aliases || [])]
+      .join(" ").toLocaleLowerCase().includes(query)
+  );
 
-  listNode.innerHTML = visible.length ? visible.map((candidate) => (
-    `<button type="button" class="problem-item topic-item ${candidate.topicId ? "written" : ""} ${candidate.name === currentTag ? "active" : ""}" data-candidate="${escapeHtml(candidate.name)}">
-      <strong>${escapeHtml(candidate.name)}</strong>
-      <span>${candidate.count || 0} 道相关题目</span>
-      <b class="topic-state">${candidate.topicId ? "已整理" : "待整理"}</b>
+  listNode.innerHTML = visible.length ? visible.map((topic) => (
+    `<button type="button" class="problem-item topic-item ${topic.topicId === currentId ? "active" : ""}" data-topic-id="${escapeHtml(topic.topicId)}">
+      <strong>${escapeHtml(topic.name)}</strong>
+      <span>${topic.count || 0} 道关联题目</span>
     </button>`
-  )).join("") : `<div class="list-empty">没有匹配的标签。</div>`;
+  )).join("") : `<div class="list-empty">${query ? "没有匹配的知识点。" : "还没有知识点，点击右上角 ＋ 新建。"}</div>`;
 
-  listNode.querySelectorAll("[data-candidate]").forEach((button) => {
+  listNode.querySelectorAll("[data-topic-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      const candidate = candidates.find((item) => item.name === button.dataset.candidate);
-      if (candidate) openCandidate(candidate);
+      const topic = topics.find((item) => item.topicId === button.dataset.topicId);
+      if (topic) loadTopic(topic.topicId, topic.name);
     });
   });
 
-  const written = candidates.filter((candidate) => candidate.topicId).length;
-  document.querySelector("#topic-count").textContent = `${written}/${candidates.length} 已整理`;
+  document.querySelector("#topic-count").textContent = `${topics.length} 个知识点`;
 }
 
-async function refreshCandidates() {
-  const response = await fetch("./api/topic-candidates");
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "读取标签失败");
-  candidates = result;
+async function refreshTopics() {
+  const [topicsResponse, tagsResponse] = await Promise.all([
+    fetch("./api/topics"),
+    fetch("./api/tags"),
+  ]);
+  const result = await topicsResponse.json();
+  if (!topicsResponse.ok) throw new Error(result.error || "读取知识点失败");
+  topics = result;
+  if (tagsResponse.ok) {
+    const tags = await tagsResponse.json();
+    document.querySelector("#known-tags").innerHTML = tags
+      .filter((tag) => !topics.some((topic) =>
+        [topic.name, ...(topic.aliases || [])]
+          .some((name) => normalize(name) === normalize(tag.name))
+      ))
+      .map((tag) => `<option value="${escapeHtml(tag.name)}"></option>`)
+      .join("");
+  }
   renderTopicList();
 }
 
 async function saveTopic() {
-  if (!currentTag) return toast("请先从左侧选择一个标签", true);
+  const payload = currentData();
+  if (!payload.tag) return toast("请填写新标签名称", true);
   saveButton.disabled = true;
   saveStateText.textContent = "正在保存…";
   try {
     const response = await fetch("./api/topics", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(currentData()),
+      body: JSON.stringify(payload),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "保存失败");
     localStorage.removeItem(draftKey());
     currentId = result.id;
-    currentTitle = result.title || currentTitle;
-    await refreshCandidates();
+    currentTag = result.title;
+    currentTitle = result.title;
+    topicNameGroup.hidden = true;
+    await refreshTopics();
     updatePreview();
     setDirty(false);
     toast("知识点已保存");
@@ -298,24 +320,52 @@ async function saveTopic() {
   }
 }
 
+async function deleteTopic() {
+  if (!currentId) return;
+  if (!confirm(`确定删除「${currentTitle}」的知识点吗？此操作会同时删除 Markdown 和 PDF。`)) return;
+  deleteButton.disabled = true;
+  try {
+    const response = await fetch(`./api/topics/${encodeURIComponent(currentId)}`, {
+      method: "DELETE",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "删除失败");
+    localStorage.removeItem(draftKey());
+    toast(`已删除「${result.title}」`);
+    currentId = "";
+    setDirty(false);
+    await refreshTopics();
+    if (topics.length) await loadTopic(topics[0].topicId, topics[0].name);
+    else newTopic(false);
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    deleteButton.disabled = false;
+  }
+}
+
 async function init() {
   try {
-    await refreshCandidates();
+    await refreshTopics();
     const params = new URLSearchParams(location.search);
     const requestedId = params.get("id");
     const requestedTag = params.get("tag");
     if (requestedId) {
-      const candidate = candidates.find((item) => item.topicId === requestedId);
-      await loadTopic(requestedId, candidate?.name);
+      const topic = topics.find((item) => item.topicId === requestedId);
+      await loadTopic(requestedId, topic?.name);
     } else if (requestedTag) {
-      const candidate = candidates.find((item) =>
+      const topic = topics.find((item) =>
         [item.name, ...(item.aliases || [])].some((name) => normalize(name) === normalize(requestedTag))
       );
-      if (candidate) openCandidate(candidate);
-      else toast("没有找到这个标签", true);
+      if (topic) await loadTopic(topic.topicId, topic.name);
+      else {
+        newTopic(false);
+        topicNameField.value = requestedTag;
+        updatePreview();
+      }
     } else {
-      const initial = candidates.find((candidate) => candidate.topicId) ?? candidates[0];
-      if (initial) openCandidate(initial);
+      if (topics.length) await loadTopic(topics[0].topicId, topics[0].name);
+      else newTopic();
     }
   } catch (error) {
     toast(error.message, true);
@@ -323,6 +373,7 @@ async function init() {
 }
 
 field.addEventListener("input", markChanged);
+topicNameField.addEventListener("input", markChanged);
 field.addEventListener("keydown", (event) => {
   if (event.key !== "Tab") return;
   event.preventDefault();
@@ -332,21 +383,15 @@ field.addEventListener("keydown", (event) => {
   markChanged();
 });
 listSearch.addEventListener("input", renderTopicList);
-document.querySelectorAll("[data-list-filter]").forEach((button) => {
-  button.addEventListener("click", () => {
-    activeListFilter = button.dataset.listFilter;
-    document.querySelectorAll("[data-list-filter]").forEach((item) => {
-      item.setAttribute("aria-pressed", String(item === button));
-    });
-    renderTopicList();
-  });
-});
 saveButton.addEventListener("click", saveTopic);
+deleteButton.addEventListener("click", deleteTopic);
+document.querySelector("#new-topic").addEventListener("click", () => newTopic());
 document.querySelector("#clear-draft").addEventListener("click", () => {
-  if (!currentTag || !confirm("确定放弃当前未保存的修改吗？")) return;
+  if (!confirm("确定放弃当前未保存的修改吗？")) return;
   localStorage.removeItem(draftKey());
-  const candidate = candidates.find((item) => item.name === currentTag);
-  if (candidate) openCandidate(candidate);
+  setDirty(false);
+  if (currentId) loadTopic(currentId, currentTag);
+  else newTopic(false);
 });
 document.querySelector("#mobile-list").addEventListener("click", () => sidebar.classList.toggle("open"));
 window.addEventListener("beforeunload", (event) => {
@@ -357,6 +402,10 @@ document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "s") {
     event.preventDefault();
     saveTopic();
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "n") {
+    event.preventDefault();
+    newTopic();
   }
 });
 

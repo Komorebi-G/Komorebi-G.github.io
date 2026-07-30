@@ -10,7 +10,6 @@ const topicContentDir = join(projectRoot, "src", "content", "topics");
 const solutionsDir = join(projectRoot, "solutions");
 const editorDir = join(projectRoot, "tools", "problem-editor");
 const topicEditorDir = join(projectRoot, "tools", "topic-editor");
-const tagsCatalogPath = join(projectRoot, "src", "data", "tags.json");
 const topicBuildScript = join(projectRoot, "scripts", "build-topic-pdfs.mjs");
 const contentConfigPath = join(projectRoot, "src", "content.config.ts");
 const port = Number(process.env.PROBLEM_EDITOR_PORT || 4322);
@@ -151,20 +150,37 @@ async function listProblems() {
 }
 
 async function listUsedTags() {
+  const [problems, topics] = await Promise.all([listProblems(), listTopics()]);
   const counts = new Map();
-  for (const problem of await listProblems()) {
+  const entries = topics.map((topic) => ({
+    name: topic.title,
+    aliases: topic.aliases,
+    count: 0,
+  }));
+
+  for (const problem of problems) {
     for (const tag of new Set(problem.tags)) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      const matched = entries.find((entry) =>
+        [entry.name, ...entry.aliases]
+          .some((name) => normalizeTopicName(name) === normalizeTopicName(tag))
+      );
+      if (matched) matched.count += 1;
+      else counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
   }
-  return [...counts.entries()]
-    .sort(([nameA, countA], [nameB, countB]) =>
-      countB - countA || nameA.localeCompare(nameB, "zh-CN")
-    )
-    .map(([name, count]) => ({
+
+  entries.push(...[...counts.entries()].map(([name, count]) => ({
+    name,
+    aliases: [],
+    count,
+  })));
+  return entries
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"))
+    .map(({ name, aliases, count }) => ({
       name,
+      aliases,
       count,
-      group: `${count} 道题`,
+      group: count > 0 ? `${count} 道题` : "知识点",
     }));
 }
 
@@ -185,84 +201,25 @@ async function listTopics() {
   }));
 }
 
-async function listTopicCandidates() {
-  const [catalogSource, problems, topics] = await Promise.all([
-    readFile(tagsCatalogPath, "utf8").catch(() => "[]"),
-    listProblems(),
-    listTopics(),
-  ]);
-  const catalog = JSON.parse(catalogSource);
-  const candidates = new Map();
-
-  for (const item of catalog) {
-    candidates.set(normalizeTopicName(item.name), {
-      name: String(item.name),
-      group: String(item.group || "未分类"),
-      aliases: Array.isArray(item.aliases) ? item.aliases.map(String) : [],
-      count: 0,
-    });
-  }
-
-  for (const problem of problems) {
-    for (const tag of new Set(problem.tags)) {
-      const normalized = normalizeTopicName(tag);
-      const matched = [...candidates.values()].find((candidate) =>
-        [candidate.name, ...candidate.aliases]
-          .some((name) => normalizeTopicName(name) === normalized)
-      );
-      if (matched) {
-        matched.count += 1;
-      } else if (candidates.has(normalized)) {
-        candidates.get(normalized).count += 1;
-      } else {
-        candidates.set(normalized, {
-          name: tag,
-          group: "未分类",
-          aliases: [],
-          count: 1,
-        });
-      }
-    }
-  }
-
-  const result = [...candidates.values()].map((candidate) => {
-    const topic = topics.find((entry) =>
-      [entry.title, ...entry.aliases]
-        .some((name) =>
-          [candidate.name, ...candidate.aliases]
-            .some((candidateName) =>
-              normalizeTopicName(name) === normalizeTopicName(candidateName)
-            )
-        )
-    );
-    return {
-      ...candidate,
-      topicId: topic?.id ?? "",
-      summary: topic?.summary ?? "",
-      updatedAt: topic?.updatedAt ?? "",
-      order: topic?.order ?? 0,
-    };
-  });
-
-  for (const topic of topics) {
-    if (result.some((candidate) => candidate.topicId === topic.id)) continue;
-    result.push({
+async function listTopicEntries() {
+  const [problems, topics] = await Promise.all([listProblems(), listTopics()]);
+  return topics
+    .map((topic) => ({
       name: topic.title,
       group: topic.group,
       aliases: topic.aliases,
-      count: 0,
+      count: problems.filter((problem) =>
+        problem.tags.some((tag) =>
+          [topic.title, ...topic.aliases]
+            .some((name) => normalizeTopicName(name) === normalizeTopicName(tag))
+        )
+      ).length,
       topicId: topic.id,
       summary: topic.summary,
       updatedAt: topic.updatedAt,
       order: topic.order,
-    });
-  }
-
-  return result.sort((a, b) =>
-    Number(Boolean(b.topicId)) - Number(Boolean(a.topicId))
-    || b.count - a.count
-    || a.name.localeCompare(b.name, "zh-CN")
-  );
+    }))
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "zh-CN"));
 }
 
 async function readProblem(id) {
@@ -390,23 +347,29 @@ async function saveTopic(rawInput) {
   if (!content) throw new Error("请填写知识点");
   if (originalId) assertTopicId(originalId);
 
-  const [candidates, topics] = await Promise.all([
-    listTopicCandidates(),
+  const [knownTags, topics] = await Promise.all([
+    listUsedTags(),
     listTopics(),
   ]);
-  const candidate = candidates.find((item) =>
+  const matchingTopic = topics.find((topic) =>
+    [topic.title, ...topic.aliases]
+      .some((name) => normalizeTopicName(name) === normalizeTopicName(tag))
+  );
+  if (!originalId && matchingTopic) {
+    throw new Error("这个标签已经有知识点，请从左侧列表打开");
+  }
+  const knownTag = knownTags.find((item) =>
     [item.name, ...(item.aliases || [])]
       .some((name) => normalizeTopicName(name) === normalizeTopicName(tag))
   );
-  if (!candidate && !originalId) throw new Error("这个标签不在标签列表中");
 
   const previousPath = originalId ? join(topicContentDir, `${originalId}.md`) : "";
   const previousSource = originalId
     ? await readFile(previousPath, "utf8")
     : null;
   const previous = previousSource === null ? null : matter(previousSource);
-  const title = String(previous?.data.title || candidate?.name || tag);
-  const id = originalId || candidate?.topicId || topicIdFrom(title);
+  const title = String(previous?.data.title || knownTag?.name || tag);
+  const id = originalId || topicIdFrom(title);
   const markdownPath = join(topicContentDir, `${id}.md`);
 
   if (!originalId && await exists(markdownPath)) {
@@ -417,10 +380,10 @@ async function saveTopic(rawInput) {
   const frontmatter = {
     title,
     summary: String(previous?.data.summary || topicSummaryFrom(content, title)),
-    group: String(previous?.data.group || candidate?.group || "未分类"),
+    group: String(previous?.data.group || "算法笔记"),
     aliases: Array.isArray(previous?.data.aliases)
       ? previous.data.aliases.map(String)
-      : (candidate?.aliases || []),
+      : (knownTag?.aliases || []),
     updatedAt: new Date().toISOString().slice(0, 10),
     order: Number(previous?.data.order ?? nextOrder),
     draft: false,
@@ -447,6 +410,29 @@ async function saveTopic(rawInput) {
   return { id, title, updatedAt: frontmatter.updatedAt, pdf: `/topics/${id}.pdf` };
 }
 
+async function deleteTopic(id) {
+  assertTopicId(id);
+  const markdownPath = join(topicContentDir, `${id}.md`);
+  const parsed = matter(await readFile(markdownPath, "utf8"));
+  const title = String(parsed.data.title || id);
+  const aliases = Array.isArray(parsed.data.aliases) ? parsed.data.aliases.map(String) : [];
+  const referencedBy = (await listProblems()).filter((problem) =>
+    problem.tags.some((tag) =>
+      [title, ...aliases]
+        .some((name) => normalizeTopicName(name) === normalizeTopicName(tag))
+    )
+  );
+  if (referencedBy.length > 0) {
+    throw new Error(`有 ${referencedBy.length} 道题正在使用「${title}」，不能删除`);
+  }
+
+  await unlink(markdownPath);
+  await unlink(join(projectRoot, "public", "topics", `${id}.pdf`)).catch(() => {});
+  const refreshTime = new Date();
+  await utimes(contentConfigPath, refreshTime, refreshTime);
+  return { id, title };
+}
+
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -466,8 +452,8 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && routePath === "/api/tags") {
       return sendJson(response, 200, await listUsedTags());
     }
-    if (request.method === "GET" && routePath === "/api/topic-candidates") {
-      return sendJson(response, 200, await listTopicCandidates());
+    if (request.method === "GET" && routePath === "/api/topics") {
+      return sendJson(response, 200, await listTopicEntries());
     }
     if (request.method === "GET" && routePath.startsWith("/api/topics/")) {
       const id = decodeURIComponent(routePath.slice("/api/topics/".length));
@@ -482,6 +468,10 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === "POST" && routePath === "/api/topics") {
       return sendJson(response, 200, await saveTopic(await parseBody(request)));
+    }
+    if (request.method === "DELETE" && routePath.startsWith("/api/topics/")) {
+      const id = decodeURIComponent(routePath.slice("/api/topics/".length));
+      return sendJson(response, 200, await deleteTopic(id));
     }
 
     const topicEditorRequest = requestUrl.pathname === "/topic-editor"
