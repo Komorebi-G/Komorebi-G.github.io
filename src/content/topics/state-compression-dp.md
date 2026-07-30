@@ -1,5 +1,5 @@
 ---
-title: 状压 DP
+title: 状压 dp
 summary: 用一个整数表示集合状态，在可控的指数复杂度内完成动态规划。
 group: 动态规划
 aliases:

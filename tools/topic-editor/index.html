@@ -19,7 +19,6 @@
             <span class="mark">LBH</span>
             <p>Knowledge Editor</p>
           </div>
-          <button id="new-topic" class="icon-button" type="button" title="新建自定义专题（Ctrl+N）">＋</button>
         </header>
 
         <nav class="editor-switch" aria-label="编辑器类型">
@@ -51,7 +50,7 @@
             <a id="view-topic" href="/topics" target="_blank" hidden>查看网页</a>
             <button id="clear-draft" type="button">放弃修改</button>
             <button id="save-topic" class="primary" type="button">
-              保存并生成 PDF
+              保存知识点
               <kbd>Ctrl S</kbd>
             </button>
           </div>
@@ -60,49 +59,13 @@
         <form id="problem-form" novalidate>
           <section class="editor-pane">
             <div class="editor-heading">
-              <p>TAG / KNOWLEDGE NOTE</p>
+              <p>TAG KNOWLEDGE</p>
               <h1 id="editor-title">选择一个标签</h1>
-            </div>
-
-            <div class="field-grid">
-              <div class="field">
-                <label for="title">标签 / 专题名称</label>
-                <input id="title" name="title" type="text" placeholder="状压 DP" required>
-              </div>
-              <div class="field">
-                <label>专题标识</label>
-                <input id="id" name="id" type="hidden">
-                <div class="generated-id">
-                  <span id="id-display">根据名称自动生成</span>
-                  <small>创建后固定</small>
-                </div>
-              </div>
-              <div class="field">
-                <label for="group">分类</label>
-                <input id="group" name="group" type="text" list="group-options" placeholder="动态规划" required>
-                <datalist id="group-options"></datalist>
-              </div>
-              <div class="field">
-                <label for="order">显示顺序</label>
-                <input id="order" name="order" type="number" min="0" step="1" value="0">
-              </div>
-            </div>
-
-            <div class="field full">
-              <label for="summary">一句话简介</label>
-              <input id="summary" name="summary" type="text" placeholder="说明这个专题解决什么问题" required>
-              <small>显示在专题列表、详情页标题下方和 PDF 封面。</small>
-            </div>
-
-            <div class="field full">
-              <label for="aliases">标签别名</label>
-              <input id="aliases" name="aliases" type="text" placeholder="状压dp, bitmask dp">
-              <small>用逗号分隔。题目使用任意一个别名，都能自动关联到该专题。</small>
             </div>
 
             <div class="field full">
               <div class="label-line">
-                <label for="content">知识点正文</label>
+                <label for="content">知识点</label>
                 <span>Markdown · LaTeX Math</span>
               </div>
               <textarea id="content" name="content" class="topic-content" spellcheck="false" placeholder="## 核心概念&#10;&#10;写下可以复用的知识……" required></textarea>
@@ -113,13 +76,7 @@
           <aside class="preview-pane">
             <div class="preview-label">LIVE MARKDOWN PREVIEW</div>
             <article id="preview" class="topic-preview">
-              <div class="preview-meta">
-                <span id="preview-group">未分类</span>
-                <span id="preview-state">新专题</span>
-              </div>
               <h2 id="preview-title">专题名称</h2>
-              <p id="preview-summary" class="preview-summary">一句话简介会显示在这里。</p>
-              <div id="preview-aliases" class="preview-tags"></div>
               <div class="preview-section">
                 <span>NOTE</span><strong>知识点</strong>
               </div>

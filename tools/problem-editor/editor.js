@@ -1,6 +1,6 @@
 const form = document.querySelector("#problem-form");
 const fields = Object.fromEntries(
-  ["url", "title", "id", "platform", "solvedAt", "idea", "code", "language"]
+  ["url", "title", "platform", "solvedAt", "idea", "code", "language"]
     .map((id) => [id, document.querySelector(`#${id}`)]),
 );
 const selectedTags = new Set();
@@ -57,23 +57,6 @@ function detectFromUrl(rawUrl) {
   return null;
 }
 
-function generatedIdForDate(date) {
-  if (originalId) return originalId;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "保存时自动生成";
-  const prefix = date.replaceAll("-", "");
-  const largest = problems.reduce((current, problem) => {
-    const match = problem.id.match(new RegExp(`^${prefix}-(\\d+)$`));
-    return match ? Math.max(current, Number(match[1])) : current;
-  }, 0);
-  return `${prefix}-${String(largest + 1).padStart(2, "0")}`;
-}
-
-function updateGeneratedId() {
-  const generated = generatedIdForDate(fields.solvedAt.value);
-  fields.id.value = generated === "保存时自动生成" ? "" : generated;
-  document.querySelector("#id-display").textContent = generated;
-}
-
 function markdownPreview(markdown) {
   const escaped = escapeHtml(markdown || "");
   const blocks = escaped.split(/\n{2,}/);
@@ -96,7 +79,6 @@ function inlineMarkdown(value) {
 }
 
 function updatePreview() {
-  updateGeneratedId();
   document.querySelector("#preview-title").textContent = fields.title.value || "题目名称";
   document.querySelector("#preview-platform").textContent = fields.platform.value || "PLATFORM";
   document.querySelector("#preview-date").textContent = fields.solvedAt.value || "DATE";
@@ -167,7 +149,6 @@ function draftKey() {
 function currentData() {
   return {
     originalId,
-    id: fields.id.value.trim(),
     title: fields.title.value.trim(),
     url: fields.url.value.trim(),
     platform: fields.platform.value.trim(),
@@ -192,7 +173,7 @@ function markChanged() {
 function fillForm(problem, isExisting = false) {
   originalId = isExisting ? problem.id : "";
   autoDetectedPlatform = "";
-  for (const key of ["url", "title", "id", "platform", "solvedAt", "idea", "code", "language"]) {
+  for (const key of ["url", "title", "platform", "solvedAt", "idea", "code", "language"]) {
     fields[key].value = problem[key] ?? (key === "language" ? "cpp" : "");
   }
   const detected = detectFromUrl(fields.url.value);
@@ -275,7 +256,6 @@ async function saveProblem() {
     if (!response.ok) throw new Error(result.error || "保存失败");
     localStorage.removeItem(draftKey());
     originalId = result.id;
-    updateGeneratedId();
     editorTitle.textContent = "编辑题目";
     setDirty(false);
     await refreshProblems();

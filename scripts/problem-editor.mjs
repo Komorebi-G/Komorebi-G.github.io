@@ -361,47 +361,71 @@ async function saveProblem(rawInput) {
   return { id, updatedAt: now };
 }
 
-function assertTopic(input) {
-  const title = String(input.title || "").trim();
-  const summary = String(input.summary || "").trim();
-  const group = String(input.group || "").trim();
-  const content = String(input.content || "").replace(/\r\n/g, "\n").trim();
-  const aliases = [...new Set((Array.isArray(input.aliases) ? input.aliases : [])
-    .map((alias) => String(alias).trim())
-    .filter((alias) => alias && alias.toLocaleLowerCase() !== title.toLocaleLowerCase()))];
-  const order = Number(input.order || 0);
-
-  if (!title) throw new Error("请填写专题名称");
-  if (!summary) throw new Error("请填写一句话简介");
-  if (!group) throw new Error("请选择或填写分类");
-  if (!content) throw new Error("请填写知识点正文");
-  if (!Number.isInteger(order) || order < 0) throw new Error("排序必须是非负整数");
-
-  return { title, summary, group, content, aliases, order };
+function topicSummaryFrom(content, title) {
+  const firstParagraph = content
+    .replace(/```[\s\S]*?```/g, "\n")
+    .replace(/\$\$[\s\S]*?\$\$/g, "\n")
+    .split("\n")
+    .filter((line) => !/^#{1,6}\s+/.test(line))
+    .map((line) => line
+      .replace(/^[-*+]\s+/, "")
+      .replace(/^\d+\.\s+/, "")
+      .replace(/!\[[^\]]*]\([^)]*\)/g, "")
+      .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+      .replace(/[`*_~]/g, "")
+      .replace(/\$([^$]+)\$/g, "$1")
+      .trim())
+    .find((line) => line && !line.startsWith("|"));
+  if (!firstParagraph) return `「${title}」的知识、常见写法与模板。`;
+  return firstParagraph.length > 72
+    ? `${firstParagraph.slice(0, 72).trim()}…`
+    : firstParagraph;
 }
 
 async function saveTopic(rawInput) {
-  const input = assertTopic(rawInput);
+  const tag = String(rawInput.tag || "").trim();
+  const content = String(rawInput.content || "").replace(/\r\n/g, "\n").trim();
   const originalId = String(rawInput.originalId || "").trim();
+  if (!tag) throw new Error("请先选择一个标签");
+  if (!content) throw new Error("请填写知识点");
   if (originalId) assertTopicId(originalId);
-  const id = originalId || topicIdFrom(rawInput.id || input.title);
+
+  const [candidates, topics] = await Promise.all([
+    listTopicCandidates(),
+    listTopics(),
+  ]);
+  const candidate = candidates.find((item) =>
+    [item.name, ...(item.aliases || [])]
+      .some((name) => normalizeTopicName(name) === normalizeTopicName(tag))
+  );
+  if (!candidate && !originalId) throw new Error("这个标签不在标签列表中");
+
+  const previousPath = originalId ? join(topicContentDir, `${originalId}.md`) : "";
+  const previousSource = originalId
+    ? await readFile(previousPath, "utf8")
+    : null;
+  const previous = previousSource === null ? null : matter(previousSource);
+  const title = String(previous?.data.title || candidate?.name || tag);
+  const id = originalId || candidate?.topicId || topicIdFrom(title);
   const markdownPath = join(topicContentDir, `${id}.md`);
 
   if (!originalId && await exists(markdownPath)) {
-    throw new Error("该专题已经存在，请从左侧列表打开后编辑");
+    throw new Error("这个标签已经有知识点，请从左侧重新打开");
   }
 
-  const previousSource = await readFile(markdownPath, "utf8").catch(() => null);
+  const nextOrder = Math.max(0, ...topics.map((topic) => Number(topic.order || 0))) + 1;
   const frontmatter = {
-    title: input.title,
-    summary: input.summary,
-    group: input.group,
-    aliases: input.aliases,
+    title,
+    summary: String(previous?.data.summary || topicSummaryFrom(content, title)),
+    group: String(previous?.data.group || candidate?.group || "未分类"),
+    aliases: Array.isArray(previous?.data.aliases)
+      ? previous.data.aliases.map(String)
+      : (candidate?.aliases || []),
     updatedAt: new Date().toISOString().slice(0, 10),
-    order: input.order,
+    order: Number(previous?.data.order ?? nextOrder),
     draft: false,
   };
-  const markdown = matter.stringify(`${input.content}\n`, frontmatter);
+  const markdown = matter.stringify(`${content}\n`, frontmatter);
   const markdownTemp = `${markdownPath}.tmp`;
 
   await writeFile(markdownTemp, markdown, "utf8");
@@ -420,7 +444,7 @@ async function saveTopic(rawInput) {
 
   const refreshTime = new Date();
   await utimes(contentConfigPath, refreshTime, refreshTime);
-  return { id, updatedAt: frontmatter.updatedAt, pdf: `/topics/${id}.pdf` };
+  return { id, title, updatedAt: frontmatter.updatedAt, pdf: `/topics/${id}.pdf` };
 }
 
 const contentTypes = {
