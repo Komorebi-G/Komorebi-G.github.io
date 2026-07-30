@@ -141,8 +141,8 @@ function markdownPreview(markdown) {
 }
 
 function updatePreview() {
-  const title = currentId ? currentTitle : topicNameField.value.trim();
-  editorTitle.textContent = currentId ? currentTitle : "新建标签知识点";
+  const title = currentTitle || topicNameField.value.trim();
+  editorTitle.textContent = currentTitle || "新建标签知识点";
   document.querySelector("#preview-title").textContent = title || "新标签";
   document.querySelector("#preview-content").innerHTML = markdownPreview(field.value);
   viewTopic.hidden = !currentId;
@@ -151,13 +151,13 @@ function updatePreview() {
 }
 
 function draftKey() {
-  return `topic-editor:${currentId || "new"}`;
+  return `topic-editor:${currentId || (currentTag ? `tag:${normalize(currentTag)}` : "new")}`;
 }
 
 function currentData() {
   return {
     originalId: currentId,
-    tag: currentId ? currentTag : topicNameField.value.trim(),
+    tag: currentTag || topicNameField.value.trim(),
     content: field.value,
   };
 }
@@ -245,6 +245,30 @@ function newTopic(restoreDraft = true) {
   topicNameField.focus();
 }
 
+function startTag(topic) {
+  if (dirty && !confirm("当前修改尚未保存，确定切换标签吗？")) return;
+  currentId = "";
+  currentTag = topic.name;
+  currentTitle = topic.name;
+  topicNameGroup.hidden = true;
+  topicNameField.value = "";
+  let content = blankContent();
+  const savedDraft = localStorage.getItem(`topic-editor:tag:${normalize(topic.name)}`);
+  if (savedDraft) {
+    try {
+      if (confirm("找到这个标签的本地草稿，是否恢复？")) {
+        content = JSON.parse(savedDraft).content ?? content;
+      }
+    } catch {}
+  }
+  field.value = content;
+  updatePreview();
+  setDirty(false);
+  renderTopicList();
+  sidebar.classList.remove("open");
+  field.focus();
+}
+
 function renderTopicList() {
   const query = listSearch.value.trim().toLocaleLowerCase();
   const visible = topics.filter((topic) =>
@@ -253,40 +277,33 @@ function renderTopicList() {
   );
 
   listNode.innerHTML = visible.length ? visible.map((topic) => (
-    `<button type="button" class="problem-item topic-item ${topic.topicId === currentId ? "active" : ""}" data-topic-id="${escapeHtml(topic.topicId)}">
+    `<button type="button" class="problem-item topic-item ${(topic.topicId && topic.topicId === currentId) || (!topic.topicId && topic.name === currentTag) ? "active" : ""}" data-topic-name="${escapeHtml(topic.name)}">
       <strong>${escapeHtml(topic.name)}</strong>
       <span>${topic.count || 0} 道关联题目</span>
     </button>`
-  )).join("") : `<div class="list-empty">${query ? "没有匹配的知识点。" : "还没有知识点，点击右上角 ＋ 新建。"}</div>`;
+  )).join("") : `<div class="list-empty">${query ? "没有匹配的标签。" : "还没有标签，点击右上角 ＋ 新建。"}</div>`;
 
-  listNode.querySelectorAll("[data-topic-id]").forEach((button) => {
+  listNode.querySelectorAll("[data-topic-name]").forEach((button) => {
     button.addEventListener("click", () => {
-      const topic = topics.find((item) => item.topicId === button.dataset.topicId);
-      if (topic) loadTopic(topic.topicId, topic.name);
+      const topic = topics.find((item) => item.name === button.dataset.topicName);
+      if (!topic) return;
+      if (topic.topicId) loadTopic(topic.topicId, topic.name);
+      else startTag(topic);
     });
   });
 
-  document.querySelector("#topic-count").textContent = `${topics.length} 个知识点`;
+  document.querySelector("#topic-count").textContent = `${topics.length} 个标签`;
 }
 
 async function refreshTopics() {
-  const [topicsResponse, tagsResponse] = await Promise.all([
-    fetch("./api/topics"),
-    fetch("./api/tags"),
-  ]);
+  const topicsResponse = await fetch("./api/topics");
   const result = await topicsResponse.json();
   if (!topicsResponse.ok) throw new Error(result.error || "读取知识点失败");
   topics = result;
-  if (tagsResponse.ok) {
-    const tags = await tagsResponse.json();
-    document.querySelector("#known-tags").innerHTML = tags
-      .filter((tag) => !topics.some((topic) =>
-        [topic.name, ...(topic.aliases || [])]
-          .some((name) => normalize(name) === normalize(tag.name))
-      ))
-      .map((tag) => `<option value="${escapeHtml(tag.name)}"></option>`)
-      .join("");
-  }
+  document.querySelector("#known-tags").innerHTML = topics
+    .filter((topic) => !topic.topicId)
+    .map((topic) => `<option value="${escapeHtml(topic.name)}"></option>`)
+    .join("");
   renderTopicList();
 }
 
@@ -335,8 +352,10 @@ async function deleteTopic() {
     currentId = "";
     setDirty(false);
     await refreshTopics();
-    if (topics.length) await loadTopic(topics[0].topicId, topics[0].name);
-    else newTopic(false);
+    if (topics.length) {
+      if (topics[0].topicId) await loadTopic(topics[0].topicId, topics[0].name);
+      else startTag(topics[0]);
+    } else newTopic(false);
   } catch (error) {
     toast(error.message, true);
   } finally {
@@ -357,15 +376,18 @@ async function init() {
       const topic = topics.find((item) =>
         [item.name, ...(item.aliases || [])].some((name) => normalize(name) === normalize(requestedTag))
       );
-      if (topic) await loadTopic(topic.topicId, topic.name);
+      if (topic?.topicId) await loadTopic(topic.topicId, topic.name);
+      else if (topic) startTag(topic);
       else {
         newTopic(false);
         topicNameField.value = requestedTag;
         updatePreview();
       }
     } else {
-      if (topics.length) await loadTopic(topics[0].topicId, topics[0].name);
-      else newTopic();
+      if (topics.length) {
+        if (topics[0].topicId) await loadTopic(topics[0].topicId, topics[0].name);
+        else startTag(topics[0]);
+      } else newTopic();
     }
   } catch (error) {
     toast(error.message, true);
@@ -391,7 +413,10 @@ document.querySelector("#clear-draft").addEventListener("click", () => {
   localStorage.removeItem(draftKey());
   setDirty(false);
   if (currentId) loadTopic(currentId, currentTag);
-  else newTopic(false);
+  else if (currentTag) {
+    const topic = topics.find((item) => item.name === currentTag);
+    if (topic) startTag(topic);
+  } else newTopic(false);
 });
 document.querySelector("#mobile-list").addEventListener("click", () => sidebar.classList.toggle("open"));
 window.addEventListener("beforeunload", (event) => {

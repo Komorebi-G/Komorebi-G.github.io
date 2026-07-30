@@ -21,6 +21,17 @@ for (const problem of problems) {
   }
 }
 
+for (const topic of topics) {
+  let count = 0;
+  for (const [tag, tagCount] of [...tagCounts]) {
+    if (findTopicForTag([topic], tag)) {
+      count += tagCount;
+      tagCounts.delete(tag);
+    }
+  }
+  tagCounts.set(topic.data.title, count);
+}
+
 const tags = [...tagCounts.entries()].sort((a, b) =>
   a[0].localeCompare(b[0], "zh-CN"),
 );
@@ -79,7 +90,15 @@ for (const problem of problems) {
                     const topic = findTopicForTag(topics, tag);
                     return (
                       <span class:list={{ "tag-option": true, "has-topic": Boolean(topic) }}>
-                        <button class="tag-filter" type="button" data-tag={tag} aria-pressed="false">
+                        <button
+                          class="tag-filter"
+                          type="button"
+                          data-tag={tag}
+                          data-match-names={JSON.stringify(
+                            topic ? [topic.data.title, ...topic.data.aliases] : [tag],
+                          )}
+                          aria-pressed="false"
+                        >
                           {tag}<span>{count}</span>
                         </button>
                         {
@@ -180,6 +199,10 @@ for (const problem of problems) {
     const groups = [...document.querySelectorAll<HTMLElement>(".month-group")];
     const archive = document.querySelector<HTMLElement>("#archive-list");
     const tagButtons = [...document.querySelectorAll<HTMLButtonElement>(".tag-filter")];
+    const tagMatchNames = new Map(tagButtons.map((button) => [
+      button.dataset.tag ?? "",
+      JSON.parse(button.dataset.matchNames ?? "[]") as string[],
+    ]));
     const activeState = document.querySelector<HTMLElement>("#active-state");
     const resultCount = document.querySelector<HTMLElement>("#result-count");
     const clearButton = document.querySelector<HTMLButtonElement>("#clear-filters");
@@ -187,7 +210,7 @@ for (const problem of problems) {
     const sortButton = document.querySelector<HTMLButtonElement>("#sort-toggle");
     const selectedTags = new Set<string>();
 
-    const normalize = (value: string) => value.toLocaleLowerCase().replace(/\s+/g, "");
+    const normalize = (value: string) => value.toLocaleLowerCase().replace(/[\s_-]+/g, "");
 
     function syncUrl() {
       const params = new URLSearchParams();
@@ -205,7 +228,11 @@ for (const problem of problems) {
       for (const row of rows) {
         const tags: string[] = JSON.parse(row.dataset.tags ?? "[]");
         const matchesQuery = !query || (row.dataset.search ?? "").includes(query);
-        const matchesTags = [...selectedTags].every((tag) => tags.includes(tag));
+        const matchesTags = [...selectedTags].every((selectedTag) =>
+          (tagMatchNames.get(selectedTag) ?? [selectedTag]).some((matchName) =>
+            tags.some((rowTag) => normalize(rowTag) === normalize(matchName))
+          )
+        );
         const show = matchesQuery && matchesTags;
         row.hidden = !show;
         if (show) visible += 1;

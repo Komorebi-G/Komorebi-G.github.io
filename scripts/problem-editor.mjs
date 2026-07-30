@@ -202,24 +202,20 @@ async function listTopics() {
 }
 
 async function listTopicEntries() {
-  const [problems, topics] = await Promise.all([listProblems(), listTopics()]);
-  return topics
-    .map((topic) => ({
-      name: topic.title,
-      group: topic.group,
-      aliases: topic.aliases,
-      count: problems.filter((problem) =>
-        problem.tags.some((tag) =>
-          [topic.title, ...topic.aliases]
-            .some((name) => normalizeTopicName(name) === normalizeTopicName(tag))
-        )
-      ).length,
-      topicId: topic.id,
-      summary: topic.summary,
-      updatedAt: topic.updatedAt,
-      order: topic.order,
-    }))
-    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "zh-CN"));
+  const [tags, topics] = await Promise.all([listUsedTags(), listTopics()]);
+  return tags.map((tag) => {
+    const topic = topics.find((entry) =>
+      [entry.title, ...entry.aliases]
+        .some((name) => normalizeTopicName(name) === normalizeTopicName(tag.name))
+    );
+    return {
+      ...tag,
+      topicId: topic?.id ?? "",
+      summary: topic?.summary ?? "",
+      updatedAt: topic?.updatedAt ?? "",
+      order: topic?.order ?? 0,
+    };
+  });
 }
 
 async function readProblem(id) {
