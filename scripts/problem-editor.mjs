@@ -6,11 +6,16 @@ import matter from "gray-matter";
 
 const projectRoot = process.cwd();
 const contentDir = join(projectRoot, "src", "content", "problems");
+const topicContentDir = join(projectRoot, "src", "content", "topics");
 const solutionsDir = join(projectRoot, "solutions");
 const editorDir = join(projectRoot, "tools", "problem-editor");
+const topicEditorDir = join(projectRoot, "tools", "topic-editor");
+const tagsCatalogPath = join(projectRoot, "src", "data", "tags.json");
+const topicBuildScript = join(projectRoot, "scripts", "build-topic-pdfs.mjs");
 const contentConfigPath = join(projectRoot, "src", "content.config.ts");
 const port = Number(process.env.PROBLEM_EDITOR_PORT || 4322);
 const idPattern = /^[a-z0-9][a-z0-9-]*$/;
+const topicIdPattern = /^[\p{L}\p{N}][\p{L}\p{N}-]*$/u;
 const languageExtensions = {
   cpp: "cpp",
   c: "c",
@@ -23,6 +28,7 @@ const languageExtensions = {
 };
 
 await mkdir(contentDir, { recursive: true });
+await mkdir(topicContentDir, { recursive: true });
 await mkdir(solutionsDir, { recursive: true });
 
 function sendJson(response, status, data) {
@@ -46,6 +52,44 @@ async function exists(path) {
   } catch {
     return false;
   }
+}
+
+function normalizeTopicName(value) {
+  return String(value || "").toLocaleLowerCase().replace(/[\s_-]+/g, "");
+}
+
+function assertTopicId(id) {
+  if (!topicIdPattern.test(id)) throw new Error("无效的专题标识");
+}
+
+function topicIdFrom(value) {
+  const id = String(value || "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\p{L}\p{N}-]+/gu, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  const normalized = /^[\x00-\x7F]+$/.test(id) ? id.toLocaleLowerCase() : id;
+  assertTopicId(normalized);
+  return normalized;
+}
+
+function runTopicPdf(id) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [topicBuildScript, id], {
+      cwd: projectRoot,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => { output += chunk; });
+    child.stderr.on("data", (chunk) => { output += chunk; });
+    child.on("error", (error) => reject(error));
+    child.on("close", (code) => {
+      if (code === 0) return resolve(output);
+      reject(new Error(output.trim() || "PDF 生成失败"));
+    });
+  });
 }
 
 function assertProblem(input) {
@@ -124,6 +168,103 @@ async function listUsedTags() {
     }));
 }
 
+async function listTopics() {
+  const files = (await readdir(topicContentDir)).filter((file) => file.endsWith(".md"));
+  return Promise.all(files.map(async (file) => {
+    const id = file.slice(0, -3);
+    const parsed = matter(await readFile(join(topicContentDir, file), "utf8"));
+    return {
+      id,
+      title: String(parsed.data.title || id),
+      summary: String(parsed.data.summary || ""),
+      group: String(parsed.data.group || "未分类"),
+      aliases: Array.isArray(parsed.data.aliases) ? parsed.data.aliases.map(String) : [],
+      updatedAt: formatInputDate(parsed.data.updatedAt),
+      order: Number(parsed.data.order || 0),
+    };
+  }));
+}
+
+async function listTopicCandidates() {
+  const [catalogSource, problems, topics] = await Promise.all([
+    readFile(tagsCatalogPath, "utf8").catch(() => "[]"),
+    listProblems(),
+    listTopics(),
+  ]);
+  const catalog = JSON.parse(catalogSource);
+  const candidates = new Map();
+
+  for (const item of catalog) {
+    candidates.set(normalizeTopicName(item.name), {
+      name: String(item.name),
+      group: String(item.group || "未分类"),
+      aliases: Array.isArray(item.aliases) ? item.aliases.map(String) : [],
+      count: 0,
+    });
+  }
+
+  for (const problem of problems) {
+    for (const tag of new Set(problem.tags)) {
+      const normalized = normalizeTopicName(tag);
+      const matched = [...candidates.values()].find((candidate) =>
+        [candidate.name, ...candidate.aliases]
+          .some((name) => normalizeTopicName(name) === normalized)
+      );
+      if (matched) {
+        matched.count += 1;
+      } else if (candidates.has(normalized)) {
+        candidates.get(normalized).count += 1;
+      } else {
+        candidates.set(normalized, {
+          name: tag,
+          group: "未分类",
+          aliases: [],
+          count: 1,
+        });
+      }
+    }
+  }
+
+  const result = [...candidates.values()].map((candidate) => {
+    const topic = topics.find((entry) =>
+      [entry.title, ...entry.aliases]
+        .some((name) =>
+          [candidate.name, ...candidate.aliases]
+            .some((candidateName) =>
+              normalizeTopicName(name) === normalizeTopicName(candidateName)
+            )
+        )
+    );
+    return {
+      ...candidate,
+      topicId: topic?.id ?? "",
+      summary: topic?.summary ?? "",
+      updatedAt: topic?.updatedAt ?? "",
+      order: topic?.order ?? 0,
+    };
+  });
+
+  for (const topic of topics) {
+    if (result.some((candidate) => candidate.topicId === topic.id)) continue;
+    result.push({
+      name: topic.title,
+      group: topic.group,
+      aliases: topic.aliases,
+      count: 0,
+      topicId: topic.id,
+      summary: topic.summary,
+      updatedAt: topic.updatedAt,
+      order: topic.order,
+    });
+  }
+
+  return result.sort((a, b) =>
+    Number(Boolean(b.topicId)) - Number(Boolean(a.topicId))
+    || b.count - a.count
+    || a.name.localeCompare(b.name, "zh-CN")
+  );
+}
+
 async function readProblem(id) {
   if (!idPattern.test(id)) throw new Error("无效的题目标识");
   const markdownPath = join(contentDir, `${id}.md`);
@@ -140,6 +281,22 @@ async function readProblem(id) {
     language: parsed.data.language ?? "cpp",
     idea: parsed.content.trim(),
     code,
+  };
+}
+
+async function readTopic(id) {
+  assertTopicId(id);
+  const parsed = matter(await readFile(join(topicContentDir, `${id}.md`), "utf8"));
+  return {
+    id,
+    title: String(parsed.data.title || ""),
+    summary: String(parsed.data.summary || ""),
+    group: String(parsed.data.group || ""),
+    aliases: Array.isArray(parsed.data.aliases) ? parsed.data.aliases.map(String) : [],
+    updatedAt: formatInputDate(parsed.data.updatedAt),
+    order: Number(parsed.data.order || 0),
+    draft: parsed.data.draft === true,
+    content: parsed.content.trim(),
   };
 }
 
@@ -204,6 +361,68 @@ async function saveProblem(rawInput) {
   return { id, updatedAt: now };
 }
 
+function assertTopic(input) {
+  const title = String(input.title || "").trim();
+  const summary = String(input.summary || "").trim();
+  const group = String(input.group || "").trim();
+  const content = String(input.content || "").replace(/\r\n/g, "\n").trim();
+  const aliases = [...new Set((Array.isArray(input.aliases) ? input.aliases : [])
+    .map((alias) => String(alias).trim())
+    .filter((alias) => alias && alias.toLocaleLowerCase() !== title.toLocaleLowerCase()))];
+  const order = Number(input.order || 0);
+
+  if (!title) throw new Error("请填写专题名称");
+  if (!summary) throw new Error("请填写一句话简介");
+  if (!group) throw new Error("请选择或填写分类");
+  if (!content) throw new Error("请填写知识点正文");
+  if (!Number.isInteger(order) || order < 0) throw new Error("排序必须是非负整数");
+
+  return { title, summary, group, content, aliases, order };
+}
+
+async function saveTopic(rawInput) {
+  const input = assertTopic(rawInput);
+  const originalId = String(rawInput.originalId || "").trim();
+  if (originalId) assertTopicId(originalId);
+  const id = originalId || topicIdFrom(rawInput.id || input.title);
+  const markdownPath = join(topicContentDir, `${id}.md`);
+
+  if (!originalId && await exists(markdownPath)) {
+    throw new Error("该专题已经存在，请从左侧列表打开后编辑");
+  }
+
+  const previousSource = await readFile(markdownPath, "utf8").catch(() => null);
+  const frontmatter = {
+    title: input.title,
+    summary: input.summary,
+    group: input.group,
+    aliases: input.aliases,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    order: input.order,
+    draft: false,
+  };
+  const markdown = matter.stringify(`${input.content}\n`, frontmatter);
+  const markdownTemp = `${markdownPath}.tmp`;
+
+  await writeFile(markdownTemp, markdown, "utf8");
+  await rename(markdownTemp, markdownPath);
+
+  try {
+    await runTopicPdf(id);
+  } catch (error) {
+    if (previousSource === null) {
+      await unlink(markdownPath).catch(() => {});
+    } else {
+      await writeFile(markdownPath, previousSource, "utf8");
+    }
+    throw new Error(`PDF 生成失败，专题修改已撤回：${error.message}`);
+  }
+
+  const refreshTime = new Date();
+  await utimes(contentConfigPath, refreshTime, refreshTime);
+  return { id, updatedAt: frontmatter.updatedAt, pdf: `/topics/${id}.pdf` };
+}
+
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -214,28 +433,47 @@ const contentTypes = {
 const server = createServer(async (request, response) => {
   try {
     const requestUrl = new URL(request.url || "/", `http://${request.headers.host}`);
-    if (request.method === "GET" && requestUrl.pathname === "/api/problems") {
+    const routePath = requestUrl.pathname
+      .replace(/^\/topic-editor\/api/, "/api")
+      .replace(/^\/editor\/api/, "/api");
+    if (request.method === "GET" && routePath === "/api/problems") {
       return sendJson(response, 200, await listProblems());
     }
-    if (request.method === "GET" && requestUrl.pathname === "/api/tags") {
+    if (request.method === "GET" && routePath === "/api/tags") {
       return sendJson(response, 200, await listUsedTags());
     }
-    if (request.method === "GET" && requestUrl.pathname.startsWith("/api/problems/")) {
-      const id = decodeURIComponent(requestUrl.pathname.slice("/api/problems/".length));
+    if (request.method === "GET" && routePath === "/api/topic-candidates") {
+      return sendJson(response, 200, await listTopicCandidates());
+    }
+    if (request.method === "GET" && routePath.startsWith("/api/topics/")) {
+      const id = decodeURIComponent(routePath.slice("/api/topics/".length));
+      return sendJson(response, 200, await readTopic(id));
+    }
+    if (request.method === "GET" && routePath.startsWith("/api/problems/")) {
+      const id = decodeURIComponent(routePath.slice("/api/problems/".length));
       return sendJson(response, 200, await readProblem(id));
     }
-    if (request.method === "POST" && requestUrl.pathname === "/api/problems") {
+    if (request.method === "POST" && routePath === "/api/problems") {
       return sendJson(response, 200, await saveProblem(await parseBody(request)));
     }
+    if (request.method === "POST" && routePath === "/api/topics") {
+      return sendJson(response, 200, await saveTopic(await parseBody(request)));
+    }
 
-    const fileName = requestUrl.pathname === "/"
-      ? "index.html"
-      : requestUrl.pathname.slice(1);
+    const topicEditorRequest = requestUrl.pathname === "/topic-editor"
+      || requestUrl.pathname.startsWith("/topic-editor/");
+    const problemEditorRequest = requestUrl.pathname.startsWith("/editor/");
+    const relativePath = topicEditorRequest
+      ? requestUrl.pathname.replace(/^\/topic-editor\/?/, "")
+      : problemEditorRequest
+        ? requestUrl.pathname.replace(/^\/editor\/?/, "")
+        : requestUrl.pathname.slice(1);
+    const fileName = relativePath || "index.html";
     if (!["index.html", "editor.css", "editor.js"].includes(fileName)) {
       response.writeHead(404);
       return response.end("Not found");
     }
-    const file = await readFile(join(editorDir, fileName));
+    const file = await readFile(join(topicEditorRequest ? topicEditorDir : editorDir, fileName));
     response.writeHead(200, { "content-type": contentTypes[extname(fileName)] });
     response.end(file);
   } catch (error) {

@@ -34,6 +34,7 @@ interface Props {
 const { topic, relatedProblems, previous, next } = Astro.props;
 const { Content, headings } = await render(topic);
 const outline = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const showEditor = import.meta.env.DEV;
 ---
 
 <BaseLayout
@@ -62,6 +63,16 @@ const outline = headings.filter((heading) => heading.depth === 2 || heading.dept
             打开 PDF
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3h8v8M13 3 4 12" /></svg>
           </a>
+          {
+            showEditor && (
+              <a class="edit-button" href={`/topic-editor/?id=${encodeURIComponent(topic.id)}`}>
+                编辑知识点
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="m10.8 2.7 2.5 2.5M3 13l.7-3.2 7.8-7.8 2.5 2.5-7.8 7.8L3 13Z" />
+                </svg>
+              </a>
+            )
+          }
         </div>
       </header>
 
@@ -157,7 +168,9 @@ const outline = headings.filter((heading) => heading.depth === 2 || heading.dept
   .read-active { color: #34493a; background: #fff; box-shadow: 0 2px 7px rgba(35,41,34,.07); }
   .pdf-button { color: #f8f8f4; background: #536a59; }
   .pdf-button:hover { background: #405647; }
-  .pdf-button svg { width: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+  .edit-button { color: #536359; background: #f6f6f2; }
+  .edit-button:hover { color: #fff; background: #718077; }
+  .pdf-button svg, .edit-button svg { width: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
   .reading-layout { display: grid; grid-template-columns: 220px minmax(0, 700px); gap: 72px; align-items: start; justify-content: center; padding: 82px 0 108px; }
   .outline { position: sticky; top: 28px; }
   .outline > p { margin: 0 0 19px; color: #858a82; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }

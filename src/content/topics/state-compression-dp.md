@@ -6,11 +6,10 @@ aliases:
   - 状压dp
   - 状态压缩 DP
   - bitmask dp
-updatedAt: 2026-07-30
+updatedAt: '2026-07-30'
 order: 1
 draft: false
 ---
-
 ## 什么时候考虑状压
 
 看到集合规模很小，通常是 $n \le 20$，而一个状态需要记录“哪些元素已经选择、访问或匹配”时，可以考虑用二进制位压缩集合。

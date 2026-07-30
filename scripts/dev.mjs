@@ -23,6 +23,7 @@ start(astroBin, ["dev"]);
 console.log("\n本地开发服务正在启动：");
 console.log("  网站与题目归档  http://localhost:4321");
 console.log("  题目录入页面    http://localhost:4321/editor/");
+console.log("  知识点编辑页面  http://localhost:4321/topic-editor/");
 console.log("按 Ctrl+C 同时停止两个服务。\n");
 
 function stop(signal = "SIGTERM") {

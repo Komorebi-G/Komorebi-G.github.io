@@ -1,0 +1,28 @@
+.list-filter { display: flex; gap: 4px; margin: -4px 0 10px; }
+.list-filter button { flex: 1; padding: 5px 2px; color: #85877f; background: transparent; border: 0; border-radius: 5px; font-size: 9px; }
+.list-filter button[aria-pressed="true"] { color: #44594a; background: rgba(255,255,255,.7); font-weight: 600; }
+.topic-item { position: relative; padding-right: 54px; }
+.topic-item .topic-state { position: absolute; top: 13px; right: 9px; padding: 4px 5px; color: #8d8f88; background: #e1e3de; border-radius: 4px; font: 8px/1 "IBM Plex Mono", monospace; }
+.topic-item.written .topic-state { color: #477055; background: #e2ece4; }
+.topic-item span em { color: #657269; font-style: normal; }
+.top-actions a { display: flex; align-items: center; height: 36px; padding: 0 11px; color: #58675d; border-radius: 7px; font-size: 11px; text-decoration: none; }
+.top-actions a:hover { background: #e8e9e4; }
+.top-actions a[hidden] { display: none; }
+.topic-content { min-height: 650px; tab-size: 2; font: 13px/1.8 "IBM Plex Mono", "Noto Serif SC", monospace; }
+.topic-preview .preview-summary { margin: -8px 0 18px; color: #71746d; font: 11px/1.75 "Noto Serif SC", serif; }
+.topic-preview .preview-copy h2 { padding-top: 8px; border-top: 1px solid #e1e2dc; }
+.topic-preview .preview-copy h2:first-child { padding-top: 0; border-top: 0; }
+.topic-preview .preview-copy ul,
+.topic-preview .preview-copy ol { padding-left: 1.4em; }
+.topic-preview .preview-copy pre { max-height: none !important; margin: 14px 0 !important; }
+.topic-preview .preview-copy .math { display: inline-block; color: #3d5946; font-family: "Noto Serif SC", serif; font-style: italic; }
+.topic-preview .preview-copy .math.block { display: block; margin: 16px 0; text-align: center; }
+.preview-table-wrap { margin: 14px 0 18px; overflow-x: auto; }
+.topic-preview .preview-copy table { width: 100%; border-spacing: 0; border-collapse: collapse; font: 9px/1.5 "Space Grotesk", "Noto Serif SC", sans-serif; }
+.topic-preview .preview-copy th,
+.topic-preview .preview-copy td { padding: 7px 8px; text-align: left; border-bottom: 1px solid #e1e2dc; }
+.topic-preview .preview-copy th { color: #536158; background: #edf0ec; font-weight: 600; }
+@media (max-width: 720px) {
+  .topic-content { min-height: 480px; }
+  .top-actions a { display: none; }
+}

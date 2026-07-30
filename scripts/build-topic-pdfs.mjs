@@ -66,6 +66,10 @@ async function buildTopic(markdownPath) {
   const texPath = join(topicTempDir, `${id}.tex`);
   const builtPdfPath = join(topicTempDir, `${id}.pdf`);
   const outputPdfPath = join(publicDir, `${id}.pdf`);
+  const sourceDate = new Date(parsed.data.updatedAt);
+  const sourceDateEpoch = Number.isNaN(sourceDate.getTime())
+    ? "0"
+    : String(Math.floor(sourceDate.getTime() / 1000));
 
   await rm(topicTempDir, { recursive: true, force: true });
   await mkdir(topicTempDir, { recursive: true });
@@ -87,7 +91,13 @@ async function buildTopic(markdownPath) {
     "-halt-on-error",
     `-output-directory=${topicTempDir}`,
     texPath,
-  ]);
+  ], {
+    env: {
+      ...process.env,
+      SOURCE_DATE_EPOCH: sourceDateEpoch,
+      FORCE_SOURCE_DATE: "1",
+    },
+  });
 
   if (!await exists(builtPdfPath)) {
     throw new Error(`${id} 没有生成 PDF`);
