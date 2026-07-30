@@ -19,4 +19,17 @@ const problems = defineCollection({
   }),
 });
 
-export const collections = { problems };
+const topics = defineCollection({
+  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/topics" }),
+  schema: z.object({
+    title: z.string().min(1),
+    summary: z.string().min(1),
+    group: z.string().min(1),
+    aliases: z.array(z.string().min(1)).default([]),
+    updatedAt: z.coerce.date(),
+    order: z.number().int().default(0),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { problems, topics };

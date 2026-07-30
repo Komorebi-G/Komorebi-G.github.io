@@ -62,6 +62,44 @@ npm run dev
 npm run problem:edit -- --no-open
 ```
 
+## 算法笔记
+
+算法笔记以 Markdown 作为唯一内容源，存放在 `src/content/topics/`。每篇笔记会生成：
+
+- `/topics/<id>/`：适合网页搜索和移动端阅读的专题页
+- `public/topics/<id>.pdf`：适合打印和离线复习的 PDF 版本
+
+新建笔记时使用以下 frontmatter：
+
+```yaml
+---
+title: 状压 DP
+summary: 用一个整数表示集合状态，在可控的指数复杂度内完成动态规划。
+group: 动态规划
+aliases:
+  - 状压dp
+  - bitmask dp
+updatedAt: 2026-07-30
+order: 1
+draft: false
+---
+```
+
+正文使用二级标题表示知识点、三级标题表示知识点内的小节。数学公式使用
+`$...$` 或 `$$...$$`，代码直接使用带语言标识的 Markdown 代码块。
+
+本地开发和完整构建会自动执行 Markdown → LaTeX → PDF。也可以只生成全部
+专题，或指定一个专题：
+
+```bash
+npm run topic:pdf
+npm run topic:pdf -- state-compression-dp
+```
+
+PDF 生成依赖 Pandoc、XeLaTeX 和 `ctex`。统一版式位于
+`templates/topic.tex`；转换脚本位于 `scripts/build-topic-pdfs.mjs`。
+生成后的 PDF 需要与 Markdown 一起提交，GitHub Pages 部署时直接使用成品。
+
 ## 构建与部署
 
 ```bash

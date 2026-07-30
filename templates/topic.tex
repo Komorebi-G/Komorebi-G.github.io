@@ -1,0 +1,105 @@
+\documentclass[11pt,UTF8,fontset=fandol]{ctexart}
+
+\usepackage[a4paper,top=24mm,bottom=24mm,left=25mm,right=25mm,headheight=14pt]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{array,booktabs,longtable}
+\usepackage{fancyvrb}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fontspec}
+
+\definecolor{Ink}{HTML}{252923}
+\definecolor{Muted}{HTML}{747B73}
+\definecolor{Accent}{HTML}{536A59}
+\definecolor{AccentSoft}{HTML}{E9EEE9}
+\definecolor{Rule}{HTML}{D6D9D3}
+\definecolor{CodeText}{HTML}{314238}
+\definecolor{CodeRule}{HTML}{C9D2CA}
+\definecolor{Link}{HTML}{3E6249}
+
+\setmonofont{Noto Sans Mono}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=Accent,
+  urlcolor=Link,
+  pdftitle={$title$},
+  pdfauthor={LBH}
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.72em}
+\setlength{\emergencystretch}{3em}
+\renewcommand{\arraystretch}{1.35}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+
+\ctexset{
+  section={
+    name={},
+    number=\arabic{section},
+    format=\raggedright\LARGE\sffamily\bfseries\color{Ink},
+    numberformat=\small\ttfamily\color{Accent},
+    aftername=\quad,
+    beforeskip=2.4em,
+    afterskip=0.8em
+  },
+  subsection={
+    name={},
+    number=\thesection.\arabic{subsection},
+    format=\raggedright\large\sffamily\bfseries\color{Ink},
+    numberformat=\small\ttfamily\color{Accent},
+    aftername=\quad,
+    beforeskip=1.8em,
+    afterskip=0.55em
+  }
+}
+
+\newcommand{\topicrule}{\par\noindent\color{Rule}\rule{\linewidth}{0.5pt}\color{Ink}}
+\newcommand{\passthrough}[1]{#1}
+\newcommand{\tightlist}{\setlength{\itemsep}{0.25em}\setlength{\parskip}{0pt}}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+\renewenvironment{Shaded}
+  {\par\medskip\noindent\begin{minipage}{\linewidth}\color{CodeText}\topicrule\vspace{0.45em}\small}
+  {\vspace{0.15em}\topicrule\end{minipage}\par\medskip}
+$else$
+\newenvironment{Shaded}
+  {\par\medskip\noindent\begin{minipage}{\linewidth}\color{CodeText}\topicrule\vspace{0.45em}\small}
+  {\vspace{0.15em}\topicrule\end{minipage}\par\medskip}
+$endif$
+
+\makeatletter
+\def\ps@topic{
+  \def\@oddhead{\small\sffamily\color{Muted}$title$\hfil ALGORITHM NOTE}
+  \def\@evenhead{\small\sffamily\color{Muted}ALGORITHM NOTE\hfil $title$}
+  \def\@oddfoot{\hfil\small\ttfamily\color{Muted}\thepage\hfil}
+  \let\@evenfoot\@oddfoot
+}
+\makeatother
+\pagestyle{topic}
+
+\begin{document}
+\thispagestyle{empty}
+
+\begin{center}
+  \vspace*{12mm}
+  {\small\ttfamily\color{Accent} ALGORITHM NOTE / $group$\par}
+  \vspace{16mm}
+  {\fontsize{36}{43}\selectfont\sffamily\bfseries\color{Ink} $title$\par}
+  \vspace{8mm}
+  {\large\color{Muted}\parbox{0.78\linewidth}{\centering $summary$}\par}
+  \vspace{9mm}
+  {\small\ttfamily\color{Muted} UPDATED / $updatedAt$\par}
+  \vspace{13mm}
+  {\color{Accent}\rule{22mm}{1.3pt}\par}
+\end{center}
+
+\vspace{12mm}
+
+$body$
+
+\end{document}

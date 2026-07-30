@@ -6,9 +6,11 @@ import { join } from "node:path";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Navbar from "../../components/Navbar.astro";
 import { formatDate, getPublishedProblems, type ProblemEntry } from "../../lib/problems";
+import { findTopicForTag, getPublishedTopics } from "../../lib/topics";
 
 export async function getStaticPaths() {
   const problems = getPublishedProblems(await getCollection("problems"));
+  const topics = getPublishedTopics(await getCollection("topics"));
 
   return Promise.all(problems.map(async (problem, index) => {
     let code = "";
@@ -35,6 +37,10 @@ export async function getStaticPaths() {
         problem,
         code,
         related,
+        topicLinks: Object.fromEntries(problem.data.tags.map((tag) => [
+          tag,
+          findTopicForTag(topics, tag)?.id ?? "",
+        ])),
         previous: problems[index + 1] ?? null,
         next: problems[index - 1] ?? null,
       },
@@ -46,11 +52,12 @@ interface Props {
   problem: ProblemEntry;
   code: string;
   related: ProblemEntry[];
+  topicLinks: Record<string, string>;
   previous: ProblemEntry | null;
   next: ProblemEntry | null;
 }
 
-const { problem, code, related, previous, next } = Astro.props;
+const { problem, code, related, topicLinks, previous, next } = Astro.props;
 const { Content } = await render(problem);
 const showEditor = import.meta.env.DEV;
 ---
@@ -74,9 +81,18 @@ const showEditor = import.meta.env.DEV;
         <h1>{problem.data.title}</h1>
         <div class="header-bottom">
           <div class="tags">
-            {problem.data.tags.map((tag) => (
-              <a href={`/problems?tag=${encodeURIComponent(tag)}`}>{tag}</a>
-            ))}
+            {problem.data.tags.map((tag) => {
+              const topicId = topicLinks[tag];
+              return (
+                <a
+                  class:list={{ "has-topic": Boolean(topicId) }}
+                  href={topicId ? `/topics/${topicId}` : `/problems?tag=${encodeURIComponent(tag)}`}
+                  title={topicId ? `查看「${tag}」算法笔记` : `筛选「${tag}」题目`}
+                >
+                  {tag}{topicId && <span>↗</span>}
+                </a>
+              );
+            })}
           </div>
           <div class="problem-actions">
             {
@@ -196,6 +212,9 @@ const showEditor = import.meta.env.DEV;
   .tags { display: flex; flex-wrap: wrap; gap: 7px; }
   .tags a { padding: 7px 10px; color: #526359; background: #e9eeea; border-radius: 6px; font-size: 12px; text-decoration: none; }
   .tags a:hover { color: #fff; background: #5c7162; }
+  .tags a.has-topic { padding-right: 8px; }
+  .tags a span { margin-left: 5px; color: #839087; font: 9px/1 "IBM Plex Mono", monospace; }
+  .tags a:hover span { color: #dfe7e1; }
   .problem-actions { display: flex; align-items: center; gap: 18px; }
   .source-link, .edit-link { display: flex; align-items: center; gap: 7px; color: #3c5543; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
   .source-link:hover, .edit-link:hover { color: #789080; }

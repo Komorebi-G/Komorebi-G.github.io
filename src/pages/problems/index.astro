@@ -9,8 +9,10 @@ import {
   getPublishedProblems,
   normalizeSearchText,
 } from "../../lib/problems";
+import { findTopicForTag, getPublishedTopics } from "../../lib/topics";
 
 const problems = getPublishedProblems(await getCollection("problems"));
+const topics = getPublishedTopics(await getCollection("topics"));
 const tagCounts = new Map<string, number>();
 
 for (const problem of problems) {
@@ -73,11 +75,28 @@ for (const problem of problems) {
 
               <div class="filter-line">
                 <div class="tag-list" aria-label="按标签筛选">
-                  {tags.map(([tag, count]) => (
-                    <button class="tag-filter" type="button" data-tag={tag} aria-pressed="false">
-                      {tag}<span>{count}</span>
-                    </button>
-                  ))}
+                  {tags.map(([tag, count]) => {
+                    const topic = findTopicForTag(topics, tag);
+                    return (
+                      <span class:list={{ "tag-option": true, "has-topic": Boolean(topic) }}>
+                        <button class="tag-filter" type="button" data-tag={tag} aria-pressed="false">
+                          {tag}<span>{count}</span>
+                        </button>
+                        {
+                          topic && (
+                            <a
+                              class="tag-topic-link"
+                              href={`/topics/${topic.id}`}
+                              title={`查看「${topic.data.title}」算法笔记`}
+                              aria-label={`查看「${topic.data.title}」算法笔记`}
+                            >
+                              ↗
+                            </a>
+                          )
+                        }
+                      </span>
+                    );
+                  })}
                 </div>
                 <button id="sort-toggle" class="sort-toggle" type="button" data-order="desc">
                   <span>最新优先</span>
@@ -298,12 +317,16 @@ for (const problem of problems) {
   .search-wrap kbd { position: absolute; right: 14px; display: grid; place-items: center; width: 24px; height: 24px; color: #8a8b84; background: #f2f2ee; border: 1px solid #deded8; border-radius: 5px; font: 11px/1 "IBM Plex Mono", monospace; }
   .filter-line { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-top: 13px; }
   .tag-list { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag-option { display: inline-flex; }
   button { cursor: pointer; }
   .tag-filter { padding: 7px 10px; color: #62645d; background: transparent; border: 1px solid #d9d9d3; border-radius: 7px; font-size: 12px; transition: .18s ease; }
+  .tag-option.has-topic .tag-filter { border-radius: 7px 0 0 7px; }
   .tag-filter span { margin-left: 6px; color: #9a9b94; font: 10px/1 "IBM Plex Mono", monospace; }
   .tag-filter:hover { color: #2d3e31; border-color: #aeb9b0; }
   .tag-filter[aria-pressed="true"] { color: #f7f7f4; background: #536a59; border-color: #536a59; }
   .tag-filter[aria-pressed="true"] span { color: #dce5de; }
+  .tag-topic-link { display: grid; place-items: center; width: 28px; color: #718077; background: #edf0ec; border: 1px solid #d9d9d3; border-left: 0; border-radius: 0 7px 7px 0; font: 10px/1 "IBM Plex Mono", monospace; text-decoration: none; }
+  .tag-topic-link:hover { color: #fff; background: #627668; border-color: #627668; }
   .sort-toggle { display: flex; align-items: center; gap: 7px; min-width: max-content; padding: 7px 8px; color: #6d6e68; background: none; border: 0; font-size: 12px; }
   .sort-toggle svg { width: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
   .sort-toggle[data-order="asc"] svg { transform: rotate(180deg); }

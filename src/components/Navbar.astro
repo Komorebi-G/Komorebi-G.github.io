@@ -11,6 +11,7 @@ const isCurrent = (href: string) =>
     <div class="links">
       <a href="/" aria-current={isCurrent("/") ? "page" : undefined}>首页</a>
       <a href="/problems" aria-current={isCurrent("/problems") ? "page" : undefined}>题目归档</a>
+      <a href="/topics" aria-current={isCurrent("/topics") ? "page" : undefined}>算法笔记</a>
       {showEditor && <a class="editor-link" href="/editor/">录入题目</a>}
       <a href="/algorithms" aria-current={isCurrent("/algorithms") ? "page" : undefined}>算法课程</a>
     </div>
@@ -29,7 +30,13 @@ const isCurrent = (href: string) =>
   .editor-link:hover { background: #405647; }
   @media (max-width: 620px) {
     nav { width: min(100% - 32px, 1120px); height: 64px; }
-    .links { gap: 14px; }
+    .links { gap: 12px; }
     .links a { font-size: 12px; }
+    .editor-link { display: none; }
+  }
+  @media (max-width: 430px) {
+    .links { gap: 10px; }
+    .links a { font-size: 11px; }
+    .brand { font-size: 16px; }
   }
 </style>
