@@ -1,6 +1,6 @@
 const form = document.querySelector("#problem-form");
 const fields = Object.fromEntries(
-  ["url", "title", "platform", "solvedAt", "idea", "code", "language"]
+  ["url", "title", "platform", "solvedAt", "statement", "idea", "code", "language"]
     .map((id) => [id, document.querySelector(`#${id}`)]),
 );
 const selectedTags = new Set();
@@ -61,6 +61,9 @@ function markdownPreview(markdown) {
   const escaped = escapeHtml(markdown || "");
   const blocks = escaped.split(/\n{2,}/);
   return blocks.map((block) => {
+    if (/^\$\$[\s\S]*\$\$$/.test(block)) {
+      return `<span class="math block">${block.slice(2, -2).trim()}</span>`;
+    }
     if (block.startsWith("### ")) return `<h3>${inlineMarkdown(block.slice(4))}</h3>`;
     if (block.startsWith("## ")) return `<h2>${inlineMarkdown(block.slice(3))}</h2>`;
     if (block.startsWith("# ")) return `<h2>${inlineMarkdown(block.slice(2))}</h2>`;
@@ -69,19 +72,21 @@ function markdownPreview(markdown) {
       return `<ul>${items}</ul>`;
     }
     return `<p>${inlineMarkdown(block).replaceAll("\n", "<br>")}</p>`;
-  }).join("") || "<p>解题思路会显示在这里。</p>";
+  }).join("") || "<p>Markdown 内容会显示在这里。</p>";
 }
 
 function inlineMarkdown(value) {
   return value
     .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\$([^$\n]+)\$/g, '<span class="math">$1</span>');
 }
 
 function updatePreview() {
   document.querySelector("#preview-title").textContent = fields.title.value || "题目名称";
   document.querySelector("#preview-platform").textContent = fields.platform.value || "PLATFORM";
   document.querySelector("#preview-date").textContent = fields.solvedAt.value || "DATE";
+  document.querySelector("#preview-statement").innerHTML = markdownPreview(fields.statement.value);
   document.querySelector("#preview-idea").innerHTML = markdownPreview(fields.idea.value);
   document.querySelector("#preview-code").textContent = fields.code.value || "// 代码预览";
   document.querySelector("#preview-tags").innerHTML = [...selectedTags]
@@ -154,6 +159,7 @@ function currentData() {
     platform: fields.platform.value.trim(),
     solvedAt: fields.solvedAt.value,
     tags: [...selectedTags],
+    statement: fields.statement.value,
     idea: fields.idea.value,
     code: fields.code.value,
     language: fields.language.value,
@@ -173,7 +179,7 @@ function markChanged() {
 function fillForm(problem, isExisting = false) {
   originalId = isExisting ? problem.id : "";
   autoDetectedPlatform = "";
-  for (const key of ["url", "title", "platform", "solvedAt", "idea", "code", "language"]) {
+  for (const key of ["url", "title", "platform", "solvedAt", "statement", "idea", "code", "language"]) {
     fields[key].value = problem[key] ?? (key === "language" ? "cpp" : "");
   }
   const detected = detectFromUrl(fields.url.value);

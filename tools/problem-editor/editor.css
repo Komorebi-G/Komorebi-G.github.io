@@ -61,6 +61,7 @@ main { min-width: 0; }
 .label-line { display: flex; align-items: center; justify-content: space-between; }
 .label-line > span { color: #999b93; font: 9px/1 "IBM Plex Mono", monospace; }
 .label-line select { width: auto; padding: 4px 8px; color: #686a62; background: transparent; border: 0; font: 10px/1 "IBM Plex Mono", monospace; }
+.statement-input { min-height: 190px; font: 13px/1.85 "Noto Serif SC", serif; }
 .idea-input { min-height: 270px; font: 13px/1.85 "Noto Serif SC", serif; }
 .code-input { min-height: 420px; tab-size: 2; font: 12px/1.7 "IBM Plex Mono", monospace; }
 .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
@@ -87,6 +88,8 @@ main { min-width: 0; }
 .preview-copy h3 { margin: 20px 0 7px; font-size: 14px; }
 .preview-copy p { margin: 0 0 12px; }
 .preview-copy code { padding: 2px 4px; color: #3e5a47; background: #edf0ec; border-radius: 3px; font: 10px/1.5 "IBM Plex Mono", monospace; }
+.preview-copy .math { color: #3d5946; font-family: "Noto Serif SC", serif; font-style: italic; }
+.preview-copy .math.block { display: block; margin: 16px 0; text-align: center; }
 #preview pre { max-height: 340px; margin: 0; padding: 15px; overflow: auto; color: #343630; background: #f5f5f2; border: 1px solid #e4e5df; border-radius: 7px; font: 9px/1.7 "IBM Plex Mono", monospace; }
 .toast { position: fixed; z-index: 100; right: 24px; bottom: 24px; max-width: 360px; padding: 12px 16px; color: #fff; background: #35493c; border-radius: 8px; box-shadow: 0 12px 35px rgba(24,29,23,.2); font-size: 12px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
 .toast.show { opacity: 1; transform: translateY(0); }

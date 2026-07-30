@@ -143,6 +143,7 @@ for (const problem of problems) {
                             problem.data.title,
                             problem.data.platform,
                             ...problem.data.tags,
+                            problem.data.statement,
                             problem.body ?? "",
                           ].join(" "),
                         )}
@@ -155,7 +156,9 @@ for (const problem of problems) {
                           <strong>{problem.data.title}</strong>
                           <span>
                             {problem.data.platform}
-                            {getExcerpt(problem.body ?? "") && <> · {getExcerpt(problem.body ?? "")}</>}
+                            {getExcerpt(problem.data.statement || problem.body || "") && (
+                              <> · {getExcerpt(problem.data.statement || problem.body || "")}</>
+                            )}
                           </span>
                         </a>
                         <div class="row-tags">

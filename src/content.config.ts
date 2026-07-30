@@ -9,6 +9,7 @@ const problems = defineCollection({
     platform: z.string().min(1),
     solvedAt: z.coerce.date(),
     tags: z.array(z.string().min(1)).min(1),
+    statement: z.string().default(""),
     code: z.string().regex(/^[a-zA-Z0-9._-]+$/),
     language: z
       .enum(["cpp", "c", "python", "java", "javascript", "typescript", "rust", "text"])

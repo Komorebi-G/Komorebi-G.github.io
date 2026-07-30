@@ -96,6 +96,7 @@ function assertProblem(input) {
   const url = String(input.url || "").trim();
   const platform = String(input.platform || "").trim();
   const solvedAt = String(input.solvedAt || "").trim();
+  const statement = String(input.statement || "").replace(/\r\n/g, "\n").trim();
   const idea = String(input.idea || "").trim();
   const code = String(input.code || "").replace(/\r\n/g, "\n").trimEnd();
   const language = String(input.language || "cpp");
@@ -116,7 +117,7 @@ function assertProblem(input) {
   if (!code) throw new Error("请填写代码");
   if (!languageExtensions[language]) throw new Error("不支持该代码语言");
 
-  return { title, url, platform, solvedAt, tags, idea, code, language };
+  return { title, url, platform, solvedAt, tags, statement, idea, code, language };
 }
 
 async function getNextProblemId(solvedAt) {
@@ -231,6 +232,7 @@ async function readProblem(id) {
     platform: parsed.data.platform ?? "",
     solvedAt: formatInputDate(parsed.data.solvedAt),
     tags: parsed.data.tags ?? [],
+    statement: String(parsed.data.statement || ""),
     language: parsed.data.language ?? "cpp",
     idea: parsed.content.trim(),
     code,
@@ -286,6 +288,7 @@ async function saveProblem(rawInput) {
     platform: input.platform,
     solvedAt: input.solvedAt,
     tags: input.tags,
+    statement: input.statement,
     code: codeFile,
     language: input.language,
     createdAt,
