@@ -6,10 +6,12 @@ from __future__ import annotations
 import html
 import re
 import shutil
-from datetime import date
 from pathlib import Path
 
 import yaml
+from pygments import lex
+from pygments.lexers import CppLexer, TextLexer, get_lexer_by_name
+from pygments.styles import get_style_by_name
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
@@ -19,19 +21,17 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     BaseDocTemplate,
+    CondPageBreak,
     Flowable,
     Frame,
     HRFlowable,
-    KeepTogether,
     PageBreak,
     PageTemplate,
     Paragraph,
     Spacer,
     Table,
     TableStyle,
-    XPreformatted,
 )
-from reportlab.platypus.tableofcontents import TableOfContents
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,9 +46,9 @@ INK = colors.HexColor("#20231F")
 MUTED = colors.HexColor("#6F756E")
 GREEN = colors.HexColor("#526A58")
 LIGHT_GREEN = colors.HexColor("#E8EEE9")
-PAPER = colors.HexColor("#F7F7F3")
+PAPER = colors.white
 LINE = colors.HexColor("#D8DBD4")
-CODE_BG = colors.HexColor("#F0F2EE")
+CODE_BG = colors.HexColor("#F6F8FA")
 
 
 def register_fonts() -> None:
@@ -62,52 +62,48 @@ register_fonts()
 
 styles = getSampleStyleSheet()
 styles.add(ParagraphStyle(
-    name="BodyCN", fontName="CN", fontSize=9.4, leading=16,
-    textColor=INK, wordWrap="CJK", spaceAfter=3 * mm,
+    name="BodyCN", fontName="CN", fontSize=10.2, leading=16.5,
+    textColor=INK, wordWrap="CJK", spaceAfter=2.5 * mm,
 ))
 styles.add(ParagraphStyle(
     name="LeadCN", parent=styles["BodyCN"], fontSize=11, leading=18,
     textColor=colors.HexColor("#485048"), spaceAfter=5 * mm,
 ))
 styles.add(ParagraphStyle(
-    name="Heading1CN", fontName="CN", fontSize=23, leading=30,
-    textColor=INK, wordWrap="CJK", spaceBefore=4 * mm, spaceAfter=6 * mm,
+    name="Heading1CN", fontName="CN", fontSize=21, leading=27,
+    textColor=INK, wordWrap="CJK", spaceBefore=2 * mm, spaceAfter=5 * mm,
 ))
 styles.add(ParagraphStyle(
-    name="Heading2CN", fontName="CN", fontSize=15, leading=21,
-    textColor=GREEN, wordWrap="CJK", spaceBefore=5 * mm, spaceAfter=3 * mm,
+    name="Heading2CN", fontName="CN", fontSize=15.5, leading=21,
+    textColor=GREEN, wordWrap="CJK", spaceBefore=4 * mm, spaceAfter=2.5 * mm,
 ))
 styles.add(ParagraphStyle(
     name="Heading3CN", fontName="CN", fontSize=11.5, leading=17,
     textColor=INK, wordWrap="CJK", spaceBefore=3 * mm, spaceAfter=2 * mm,
 ))
 styles.add(ParagraphStyle(
-    name="MetaCN", fontName="CN", fontSize=7.6, leading=12,
-    textColor=MUTED, wordWrap="CJK", spaceAfter=3 * mm,
+    name="MetaCN", fontName="CN", fontSize=8.3, leading=12,
+    textColor=MUTED, wordWrap="CJK", spaceAfter=2.5 * mm,
 ))
 styles.add(ParagraphStyle(
     name="BulletCN", parent=styles["BodyCN"], leftIndent=5 * mm,
     firstLineIndent=-3.4 * mm, bulletIndent=0, spaceAfter=1.3 * mm,
 ))
 styles.add(ParagraphStyle(
-    name="EquationCN", fontName="CNMono", fontSize=9.2, leading=15,
+    name="EquationCN", fontName="CNMono", fontSize=10, leading=15,
     alignment=TA_CENTER, textColor=INK, backColor=LIGHT_GREEN,
     borderPadding=(3 * mm, 4 * mm, 3 * mm, 4 * mm), spaceAfter=4 * mm,
 ))
 styles.add(ParagraphStyle(
-    name="CodeCN", fontName="CNMono", fontSize=6.35, leading=9.2,
-    textColor=colors.HexColor("#26322A"), backColor=CODE_BG,
-    borderColor=LINE, borderWidth=0.5, borderPadding=3 * mm,
-    leftIndent=0, rightIndent=0, spaceBefore=2 * mm, spaceAfter=4 * mm,
+    name="CodeLine", fontName="CNMono", fontSize=7.15, leading=9.0,
+    textColor=colors.HexColor("#24292F"), wordWrap=None, spaceAfter=0,
 ))
 styles.add(ParagraphStyle(
-    name="TOC1CN", fontName="CN", fontSize=11, leading=20,
-    leftIndent=0, firstLineIndent=0, textColor=INK,
+    name="CodeNumber", fontName="CNMono", fontSize=6.4, leading=9.0,
+    textColor=colors.HexColor("#9AA0A6"), alignment=TA_LEFT, spaceAfter=0,
 ))
-styles.add(ParagraphStyle(
-    name="TOC2CN", fontName="CN", fontSize=8.5, leading=15,
-    leftIndent=7 * mm, firstLineIndent=0, textColor=MUTED,
-))
+
+PYGMENTS_STYLE = get_style_by_name("friendly")
 
 
 def read_markdown(path: Path) -> tuple[dict, str]:
@@ -159,11 +155,64 @@ def inline_markup(value: str) -> str:
     return "".join(rendered)
 
 
+def highlighted_code(code: str, language: str = "cpp") -> Table:
+    """Return a page-splittable, syntax-highlighted code table with line numbers."""
+    try:
+        lexer = get_lexer_by_name(language or "text")
+    except Exception:
+        lexer = CppLexer() if language in {"c", "cpp"} else TextLexer()
+
+    lines: list[str] = []
+    current: list[str] = []
+    for token_type, value in lex(code.expandtabs(4), lexer):
+        token_style = PYGMENTS_STYLE.style_for_token(token_type)
+        color = f"#{token_style['color']}" if token_style.get("color") else "#24292F"
+        for index, piece in enumerate(value.split("\n")):
+            escaped = html.escape(piece).replace(" ", "&#160;")
+            if escaped:
+                escaped = f'<font color="{color}">{escaped}</font>'
+                if token_style.get("bold"):
+                    escaped = f"<b>{escaped}</b>"
+                if token_style.get("italic"):
+                    escaped = f"<i>{escaped}</i>"
+                current.append(escaped)
+            if index < len(value.split("\n")) - 1:
+                lines.append("".join(current) or "&#160;")
+                current = []
+    if current or not lines:
+        lines.append("".join(current) or "&#160;")
+
+    data = [
+        [Paragraph(str(number), styles["CodeNumber"]), Paragraph(line, styles["CodeLine"])]
+        for number, line in enumerate(lines, 1)
+    ]
+    table = Table(
+        data,
+        colWidths=[8 * mm, PAGE_W - 34 * mm],
+        splitByRow=1,
+        hAlign="LEFT",
+    )
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), CODE_BG),
+        ("BOX", (0, 0), (-1, -1), 0.45, LINE),
+        ("LINEAFTER", (0, 0), (0, -1), 0.35, colors.HexColor("#E1E4E8")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (0, -1), 2 * mm),
+        ("RIGHTPADDING", (0, 0), (0, -1), 1.2 * mm),
+        ("LEFTPADDING", (1, 0), (1, -1), 2.2 * mm),
+        ("RIGHTPADDING", (1, 0), (1, -1), 2 * mm),
+        ("TOPPADDING", (0, 0), (-1, -1), 0.25 * mm),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0.25 * mm),
+    ]))
+    return table
+
+
 def markdown_flowables(body: str) -> list[Flowable]:
     result: list[Flowable] = []
     paragraph: list[str] = []
     code: list[str] = []
     equation: list[str] = []
+    code_language = "cpp"
     in_code = False
     in_equation = False
 
@@ -176,12 +225,13 @@ def markdown_flowables(body: str) -> list[Flowable]:
         line = raw_line.rstrip()
         if line.startswith("```"):
             if in_code:
-                result.append(XPreformatted(html.escape("\n".join(code)), styles["CodeCN"]
-                ))
+                result.append(highlighted_code("\n".join(code), code_language))
+                result.append(Spacer(1, 3 * mm))
                 code.clear()
                 in_code = False
             else:
                 flush_paragraph()
+                code_language = line[3:].strip() or "text"
                 in_code = True
             continue
         if in_code:
@@ -224,8 +274,8 @@ class HandbookDoc(BaseDocTemplate):
     def __init__(self, filename: str):
         super().__init__(
             filename, pagesize=A4,
-            leftMargin=18 * mm, rightMargin=18 * mm,
-            topMargin=19 * mm, bottomMargin=17 * mm,
+            leftMargin=13 * mm, rightMargin=13 * mm,
+            topMargin=13 * mm, bottomMargin=13 * mm,
             title="LBH ICPC 赛前速查册", author="LBH",
         )
         frame = Frame(self.leftMargin, self.bottomMargin, self.width, self.height, id="main")
@@ -235,13 +285,9 @@ class HandbookDoc(BaseDocTemplate):
         canvas.saveState()
         canvas.setFillColor(PAPER)
         canvas.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
-        if doc.page > 1:
-            canvas.setStrokeColor(LINE)
-            canvas.line(18 * mm, PAGE_H - 13 * mm, PAGE_W - 18 * mm, PAGE_H - 13 * mm)
-            canvas.setFont("CNMono", 7)
-            canvas.setFillColor(MUTED)
-            canvas.drawString(18 * mm, PAGE_H - 10 * mm, "LBH / ICPC CONTEST HANDBOOK")
-            canvas.drawRightString(PAGE_W - 18 * mm, 10 * mm, f"{doc.page:02d}")
+        canvas.setFont("CNMono", 7)
+        canvas.setFillColor(MUTED)
+        canvas.drawRightString(PAGE_W - 13 * mm, 7 * mm, str(doc.page))
         canvas.restoreState()
 
     def afterFlowable(self, flowable: Flowable) -> None:
@@ -253,15 +299,6 @@ class HandbookDoc(BaseDocTemplate):
                 key = f"section-{self.seq.nextf('section')}"
                 self.canv.bookmarkPage(key)
                 self.canv.addOutlineEntry(text, key, level=level, closed=False)
-                self.notify("TOCEntry", (level, text, self.page, key))
-
-
-def section_title(label: str, title: str, count: str = "") -> list[Flowable]:
-    meta = label if not count else f"{label}  /  {count}"
-    return [
-        Paragraph(meta, styles["MetaCN"]),
-        Paragraph(title, styles["Heading1CN"]),
-    ]
 
 
 def build_story() -> list[Flowable]:
@@ -279,106 +316,48 @@ def build_story() -> list[Flowable]:
             problem_entries.append((str(data.get("solvedAt", "")), path, data, body))
     problem_entries.sort(key=lambda item: (item[0], item[1].name), reverse=True)
 
-    story: list[Flowable] = [
-        Spacer(1, 29 * mm),
-        Paragraph("ICPC / CONTEST NOTES", styles["MetaCN"]),
-        Paragraph("赛前速查册", ParagraphStyle(
-            "CoverTitle", parent=styles["Heading1CN"], fontSize=36, leading=44,
-            textColor=INK, spaceAfter=6 * mm,
-        )),
-        Paragraph("题目归档与标签板子", ParagraphStyle(
-            "CoverSub", parent=styles["LeadCN"], fontSize=16, leading=24,
-            textColor=GREEN,
-        )),
-        Spacer(1, 52 * mm),
-        Table([
-            ["题目", f"{len(problem_entries):02d}"],
-            ["标签板子", f"{len(topic_entries):02d}"],
-            ["生成日期", date.today().isoformat()],
-        ], colWidths=[38 * mm, 74 * mm], style=TableStyle([
-            ("FONTNAME", (0, 0), (-1, -1), "CN"),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("TEXTCOLOR", (0, 0), (0, -1), MUTED),
-            ("TEXTCOLOR", (1, 0), (1, -1), INK),
-            ("LINEBELOW", (0, 0), (-1, -1), 0.5, LINE),
-            ("TOPPADDING", (0, 0), (-1, -1), 4 * mm),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4 * mm),
-        ])),
-        Spacer(1, 12 * mm),
-        Paragraph(
-            "板子部分按标签顺序排在前面，做题记录按完成时间倒序排在后面。内容来自个人网站，保留原有思路与表述。",
-            styles["LeadCN"],
-        ),
-        PageBreak(),
-        *section_title("CONTENTS", "目录"),
-    ]
-
-    toc = TableOfContents()
-    toc.levelStyles = [styles["TOC1CN"], styles["TOC2CN"]]
-    toc.dotsMinLevel = 0
-    story.extend([toc, PageBreak()])
-
-    story.extend(section_title("PART 01", "标签板子", f"{len(topic_entries)} 篇"))
-    story.append(Paragraph(
-        "从识别标签进入对应知识点；公式、变量和代码已统一为适合屏幕阅读与打印的格式。",
-        styles["LeadCN"],
-    ))
+    story: list[Flowable] = [Paragraph("标签板子", styles["Heading1CN"])]
     for index, (_, path, data, body) in enumerate(topic_entries, 1):
         story.extend([
-            Paragraph(f"{index:02d}  /  {path.stem}", styles["MetaCN"]),
+            HRFlowable(width="100%", thickness=0.5, color=LINE, spaceBefore=4 * mm, spaceAfter=4 * mm)
+            if index > 1 else Spacer(1, 1 * mm),
             Paragraph(str(data.get("title", path.stem)), styles["Heading2CN"]),
-            Paragraph(inline_markup(str(data.get("summary", ""))), styles["LeadCN"]),
             *markdown_flowables(body),
-            Spacer(1, 5 * mm),
+            Spacer(1, 2 * mm),
         ])
 
-    story.extend([PageBreak(), *section_title("PART 02", "做题记录", f"{len(problem_entries)} 题")])
-    story.append(Paragraph(
-        "每题保留题目大意、原始解题思路和提交代码，便于比赛前按标签回忆完整路径。",
-        styles["LeadCN"],
-    ))
+    story.extend([PageBreak(), Paragraph("做题记录", styles["Heading1CN"])])
     for index, (_, path, data, body) in enumerate(problem_entries, 1):
         title = str(data.get("title", path.stem))
         tags = " / ".join(str(tag) for tag in data.get("tags", []))
+        source_url = html.escape(str(data.get("url", "")), quote=True)
         story.extend([
+            CondPageBreak(58 * mm),
             HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=7 * mm, spaceAfter=7 * mm)
             if index > 1 else Spacer(1, 2 * mm),
-            Paragraph(f"{index:02d}  /  {path.stem}", styles["MetaCN"]),
             Paragraph(title, styles["Heading2CN"]),
             Paragraph(
-                inline_markup(
-                    f"{data.get('platform', '')}　{data.get('solvedAt', '')}　{tags}　代码：{data.get('code', '')}"
-                ),
+                f"{inline_markup(str(data.get('platform', '')))}　"
+                f"{inline_markup(str(data.get('solvedAt', '')))}　"
+                f"{inline_markup(tags)}　"
+                f'<link href="{source_url}" color="#526A58">原题</link>　'
+                f"{inline_markup(str(data.get('code', '')))}",
                 styles["MetaCN"],
             ),
             Paragraph("题目大意", styles["Heading3CN"]),
             *markdown_flowables(str(data.get("statement", ""))),
             Paragraph("思路", styles["Heading3CN"]),
             *markdown_flowables(body),
-            Paragraph("提交代码", styles["Heading3CN"]),
+            Paragraph("代码", styles["Heading3CN"]),
         ])
         code_path = SOLUTIONS_DIR / str(data.get("code", ""))
         if code_path.exists():
-            story.append(XPreformatted(
-                html.escape(code_path.read_text(encoding="utf-8").rstrip()), styles["CodeCN"]
+            story.append(highlighted_code(
+                code_path.read_text(encoding="utf-8").rstrip(),
+                str(data.get("language", "cpp")),
             ))
         else:
             story.append(Paragraph("未找到对应代码文件。", styles["BodyCN"]))
-
-    story.extend([
-        PageBreak(),
-        *section_title("END", "上场前最后检查"),
-        Paragraph("□ 先读完所有题，按预期难度与队友分工。", styles["BodyCN"]),
-        Paragraph("□ 写清状态、转移、复杂度和边界，再开始敲代码。", styles["BodyCN"]),
-        Paragraph("□ 检查 long long、数组范围、初始化、多测清空与下标。", styles["BodyCN"]),
-        Paragraph("□ 图论检查非连通图、重边、自环与父边；位运算检查移位宽度。", styles["BodyCN"]),
-        Paragraph("□ 提交前跑样例、自造极小数据，并复查输出格式。", styles["BodyCN"]),
-        Spacer(1, 24 * mm),
-        Paragraph("GL & HF.", ParagraphStyle(
-            "EndMark", parent=styles["Heading1CN"], alignment=TA_CENTER,
-            fontName="CNMono", fontSize=28, textColor=GREEN,
-        )),
-    ])
     return story
 
 
@@ -386,7 +365,7 @@ def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     PUBLIC_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     doc = HandbookDoc(str(OUTPUT))
-    doc.multiBuild(build_story())
+    doc.build(build_story())
     shutil.copy2(OUTPUT, PUBLIC_OUTPUT)
     print(f"built {OUTPUT.relative_to(ROOT)}")
     print(f"copied {PUBLIC_OUTPUT.relative_to(ROOT)}")
