@@ -147,7 +147,7 @@ function updatePreview() {
   document.querySelector("#preview-content").innerHTML = markdownPreview(field.value);
   viewTopic.hidden = !currentId;
   deleteButton.hidden = !currentId;
-  if (currentId) viewTopic.href = `/topics/${encodeURIComponent(currentId)}`;
+  if (currentId) viewTopic.href = `/problems/tags/${encodeURIComponent(currentId)}`;
 }
 
 function draftKey() {
@@ -205,7 +205,7 @@ function applyTopic(topic, candidateName, isExisting) {
 
 async function loadTopic(id, candidateName = "") {
   if (dirty && !confirm("当前修改尚未保存，确定切换标签吗？")) return;
-  const response = await fetch(`./api/topics/${encodeURIComponent(id)}`);
+  const response = await fetch(`./api/tag-knowledge/${encodeURIComponent(id)}`);
   const topic = await response.json();
   if (!response.ok) return toast(topic.error || "读取知识点失败", true);
   const savedDraft = localStorage.getItem(`topic-editor:${id}`);
@@ -296,7 +296,7 @@ function renderTopicList() {
 }
 
 async function refreshTopics() {
-  const topicsResponse = await fetch("./api/topics");
+  const topicsResponse = await fetch("./api/tag-knowledge");
   const result = await topicsResponse.json();
   if (!topicsResponse.ok) throw new Error(result.error || "读取知识点失败");
   topics = result;
@@ -313,7 +313,7 @@ async function saveTopic() {
   saveButton.disabled = true;
   saveStateText.textContent = "正在保存…";
   try {
-    const response = await fetch("./api/topics", {
+    const response = await fetch("./api/tag-knowledge", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
@@ -339,10 +339,10 @@ async function saveTopic() {
 
 async function deleteTopic() {
   if (!currentId) return;
-  if (!confirm(`确定删除「${currentTitle}」的知识点吗？此操作会同时删除 Markdown 和 PDF。`)) return;
+  if (!confirm(`确定删除「${currentTitle}」的知识点吗？此操作会删除对应 Markdown。`)) return;
   deleteButton.disabled = true;
   try {
-    const response = await fetch(`./api/topics/${encodeURIComponent(currentId)}`, {
+    const response = await fetch(`./api/tag-knowledge/${encodeURIComponent(currentId)}`, {
       method: "DELETE",
     });
     const result = await response.json();

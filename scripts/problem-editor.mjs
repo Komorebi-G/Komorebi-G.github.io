@@ -1,16 +1,14 @@
 import { createServer } from "node:http";
 import { access, mkdir, readFile, readdir, rename, unlink, utimes, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
-import { spawn } from "node:child_process";
 import matter from "gray-matter";
 
 const projectRoot = process.cwd();
 const contentDir = join(projectRoot, "src", "content", "problems");
-const topicContentDir = join(projectRoot, "src", "content", "topics");
+const topicContentDir = join(projectRoot, "src", "content", "problem-tags");
 const solutionsDir = join(projectRoot, "solutions");
 const editorDir = join(projectRoot, "tools", "problem-editor");
 const topicEditorDir = join(projectRoot, "tools", "topic-editor");
-const topicBuildScript = join(projectRoot, "scripts", "build-topic-pdfs.mjs");
 const contentConfigPath = join(projectRoot, "src", "content.config.ts");
 const port = Number(process.env.PROBLEM_EDITOR_PORT || 4322);
 const idPattern = /^[a-z0-9][a-z0-9-]*$/;
@@ -71,24 +69,6 @@ function topicIdFrom(value) {
   const normalized = /^[\x00-\x7F]+$/.test(id) ? id.toLocaleLowerCase() : id;
   assertTopicId(normalized);
   return normalized;
-}
-
-function runTopicPdf(id) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [topicBuildScript, id], {
-      cwd: projectRoot,
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let output = "";
-    child.stdout.on("data", (chunk) => { output += chunk; });
-    child.stderr.on("data", (chunk) => { output += chunk; });
-    child.on("error", (error) => reject(error));
-    child.on("close", (code) => {
-      if (code === 0) return resolve(output);
-      reject(new Error(output.trim() || "PDF 生成失败"));
-    });
-  });
 }
 
 function assertProblem(input) {
@@ -194,7 +174,6 @@ async function listTopics() {
       id,
       title: String(parsed.data.title || id),
       summary: String(parsed.data.summary || ""),
-      group: String(parsed.data.group || "未分类"),
       aliases: Array.isArray(parsed.data.aliases) ? parsed.data.aliases.map(String) : [],
       updatedAt: formatInputDate(parsed.data.updatedAt),
       order: Number(parsed.data.order || 0),
@@ -246,7 +225,6 @@ async function readTopic(id) {
     id,
     title: String(parsed.data.title || ""),
     summary: String(parsed.data.summary || ""),
-    group: String(parsed.data.group || ""),
     aliases: Array.isArray(parsed.data.aliases) ? parsed.data.aliases.map(String) : [],
     updatedAt: formatInputDate(parsed.data.updatedAt),
     order: Number(parsed.data.order || 0),
@@ -379,7 +357,6 @@ async function saveTopic(rawInput) {
   const frontmatter = {
     title,
     summary: String(previous?.data.summary || topicSummaryFrom(content, title)),
-    group: String(previous?.data.group || "算法笔记"),
     aliases: Array.isArray(previous?.data.aliases)
       ? previous.data.aliases.map(String)
       : (knownTag?.aliases || []),
@@ -393,20 +370,9 @@ async function saveTopic(rawInput) {
   await writeFile(markdownTemp, markdown, "utf8");
   await rename(markdownTemp, markdownPath);
 
-  try {
-    await runTopicPdf(id);
-  } catch (error) {
-    if (previousSource === null) {
-      await unlink(markdownPath).catch(() => {});
-    } else {
-      await writeFile(markdownPath, previousSource, "utf8");
-    }
-    throw new Error(`PDF 生成失败，专题修改已撤回：${error.message}`);
-  }
-
   const refreshTime = new Date();
   await utimes(contentConfigPath, refreshTime, refreshTime);
-  return { id, title, updatedAt: frontmatter.updatedAt, pdf: `/topics/${id}.pdf` };
+  return { id, title, updatedAt: frontmatter.updatedAt };
 }
 
 async function deleteTopic(id) {
@@ -426,7 +392,6 @@ async function deleteTopic(id) {
   }
 
   await unlink(markdownPath);
-  await unlink(join(projectRoot, "public", "topics", `${id}.pdf`)).catch(() => {});
   const refreshTime = new Date();
   await utimes(contentConfigPath, refreshTime, refreshTime);
   return { id, title };
@@ -451,11 +416,11 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && routePath === "/api/tags") {
       return sendJson(response, 200, await listUsedTags());
     }
-    if (request.method === "GET" && routePath === "/api/topics") {
+    if (request.method === "GET" && routePath === "/api/tag-knowledge") {
       return sendJson(response, 200, await listTopicEntries());
     }
-    if (request.method === "GET" && routePath.startsWith("/api/topics/")) {
-      const id = decodeURIComponent(routePath.slice("/api/topics/".length));
+    if (request.method === "GET" && routePath.startsWith("/api/tag-knowledge/")) {
+      const id = decodeURIComponent(routePath.slice("/api/tag-knowledge/".length));
       return sendJson(response, 200, await readTopic(id));
     }
     if (request.method === "GET" && routePath.startsWith("/api/problems/")) {
@@ -465,11 +430,11 @@ const server = createServer(async (request, response) => {
     if (request.method === "POST" && routePath === "/api/problems") {
       return sendJson(response, 200, await saveProblem(await parseBody(request)));
     }
-    if (request.method === "POST" && routePath === "/api/topics") {
+    if (request.method === "POST" && routePath === "/api/tag-knowledge") {
       return sendJson(response, 200, await saveTopic(await parseBody(request)));
     }
-    if (request.method === "DELETE" && routePath.startsWith("/api/topics/")) {
-      const id = decodeURIComponent(routePath.slice("/api/topics/".length));
+    if (request.method === "DELETE" && routePath.startsWith("/api/tag-knowledge/")) {
+      const id = decodeURIComponent(routePath.slice("/api/tag-knowledge/".length));
       return sendJson(response, 200, await deleteTopic(id));
     }
 

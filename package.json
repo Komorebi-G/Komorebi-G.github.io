@@ -4,13 +4,12 @@
   "version": "0.1.0",
   "scripts": {
     "sync:demos": "node scripts/sync-demos.mjs",
-    "build:topics": "node scripts/build-topic-pdfs.mjs",
-    "topic:pdf": "node scripts/build-topic-pdfs.mjs",
+    "build:handbook": "python3 scripts/build-contest-handbook.py",
     "problem:edit": "node scripts/problem-editor.mjs",
-    "predev": "npm run sync:demos && npm run build:topics",
+    "predev": "npm run sync:demos",
     "dev": "node scripts/dev.mjs",
     "dev:site": "astro dev",
-    "prebuild": "npm run sync:demos && npm run build:topics",
+    "prebuild": "npm run sync:demos",
     "build": "astro check && astro build",
     "build:pages": "astro check && astro build",
     "preview": "astro preview"

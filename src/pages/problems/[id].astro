@@ -9,11 +9,11 @@ import remarkMath from "remark-math";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Navbar from "../../components/Navbar.astro";
 import { formatDate, getExcerpt, getPublishedProblems, type ProblemEntry } from "../../lib/problems";
-import { findTopicForTag, getPublishedTopics } from "../../lib/topics";
+import { findTopicForTag, getPublishedTopics } from "../../lib/tag-knowledge";
 
 export async function getStaticPaths() {
   const problems = getPublishedProblems(await getCollection("problems"));
-  const topics = getPublishedTopics(await getCollection("topics"));
+  const topics = getPublishedTopics(await getCollection("tagKnowledge"));
   const statementProcessor = await createMarkdownProcessor({
     remarkPlugins: [remarkMath],
     rehypePlugins: [rehypeKatex],
@@ -101,8 +101,8 @@ const showEditor = import.meta.env.DEV;
               return (
                 <a
                   class:list={{ "has-topic": Boolean(topicId) }}
-                  href={topicId ? `/topics/${topicId}` : `/problems?tag=${encodeURIComponent(tag)}`}
-                  title={topicId ? `查看「${tag}」算法笔记` : `筛选「${tag}」题目`}
+                  href={topicId ? `/problems/tags/${topicId}` : `/problems?tag=${encodeURIComponent(tag)}`}
+                  title={topicId ? `查看「${tag}」标签知识点` : `筛选「${tag}」题目`}
                 >
                   {tag}{topicId && <span>↗</span>}
                 </a>

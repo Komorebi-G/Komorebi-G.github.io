@@ -62,14 +62,13 @@ npm run dev
 npm run problem:edit -- --no-open
 ```
 
-## 算法笔记
+## 标签知识点
 
-算法笔记以 Markdown 作为唯一内容源，存放在 `src/content/topics/`。每篇笔记会生成：
+标签知识点是题目归档的一部分，以 Markdown 存放在
+`src/content/problem-tags/`。在 `/problems` 的标签旁点击箭头，可直接进入
+`/problems/tags/<id>` 阅读对应知识点。
 
-- `/topics/<id>/`：适合网页搜索和移动端阅读的专题页
-- `public/topics/<id>.pdf`：适合打印和离线复习的 PDF 版本
-
-启动本地开发服务后，可以从“算法笔记”页面点击“编辑标签知识点”，或直接打开：
+启动本地开发服务后，可直接打开知识点编辑器：
 
 ```text
 http://localhost:4321/topic-editor/
@@ -79,22 +78,19 @@ http://localhost:4321/topic-editor/
 编辑器中；新建知识点标签后，即使还没有题目引用，也会在题目归档中显示为
 `标签名 0`，并提供知识点跳转。已有知识点只需编辑 Markdown，标签名称和
 内部元数据由系统自动维护。没有题目引用的知识点可以删除；被题目引用时
-系统会阻止删除。保存时会同时更新专题 Markdown 和对应 PDF。
+系统会阻止删除。保存时只更新对应的 Markdown 内容。
 
 正文使用二级标题表示知识点、三级标题表示知识点内的小节。数学公式使用
 `$...$` 或 `$$...$$`，代码直接使用带语言标识的 Markdown 代码块。
 
-本地开发和完整构建会自动执行 Markdown → LaTeX → PDF。也可以只生成全部
-专题，或指定一个专题：
+题目归档和标签板子可以合并生成一份适合打印的赛前速查册：
 
 ```bash
-npm run topic:pdf
-npm run topic:pdf -- state-compression-dp
+npm run build:handbook
 ```
 
-PDF 生成依赖 Pandoc、XeLaTeX 和 `ctex`。统一版式位于
-`templates/topic.tex`；转换脚本位于 `scripts/build-topic-pdfs.mjs`。
-生成后的 PDF 需要与 Markdown 一起提交，GitHub Pages 部署时直接使用成品。
+成品会同时写入 `output/pdf/icpc-contest-handbook.pdf` 和网站可下载目录
+`public/downloads/icpc-contest-handbook.pdf`。
 
 ## 构建与部署
 

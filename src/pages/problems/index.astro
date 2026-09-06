@@ -9,10 +9,10 @@ import {
   getPublishedProblems,
   normalizeSearchText,
 } from "../../lib/problems";
-import { findTopicForTag, getPublishedTopics } from "../../lib/topics";
+import { findTopicForTag, getPublishedTopics } from "../../lib/tag-knowledge";
 
 const problems = getPublishedProblems(await getCollection("problems"));
-const topics = getPublishedTopics(await getCollection("topics"));
+const topics = getPublishedTopics(await getCollection("tagKnowledge"));
 const showEditor = import.meta.env.DEV;
 const tagCounts = new Map<string, number>();
 
@@ -64,6 +64,9 @@ for (const problem of problems) {
           </div>
           <div class="archive-actions">
             <span class="total">{problems.length.toString().padStart(2, "0")} 题</span>
+            <a class="handbook-link" href="/downloads/icpc-contest-handbook.pdf" download>
+              ↓ 赛前速查册
+            </a>
             {
               showEditor && (
                 <a class="editor-link" href="/editor/">
@@ -115,9 +118,9 @@ for (const problem of problems) {
                           topic && (
                             <a
                               class="tag-topic-link"
-                              href={`/topics/${topic.id}`}
-                              title={`查看「${topic.data.title}」算法笔记`}
-                              aria-label={`查看「${topic.data.title}」算法笔记`}
+                              href={`/problems/tags/${topic.id}`}
+                              title={`查看「${topic.data.title}」标签知识点`}
+                              aria-label={`查看「${topic.data.title}」标签知识点`}
                             >
                               ↗
                             </a>
@@ -350,6 +353,8 @@ for (const problem of problems) {
   .title-row p { margin: 22px 0 0; color: #686962; font: 400 16px/1.7 "Noto Serif SC", serif; }
   .archive-actions { display: flex; align-items: center; gap: 18px; padding-bottom: 1px; }
   .total { padding-bottom: 7px; color: #92938c; font: 12px/1 "IBM Plex Mono", monospace; white-space: nowrap; }
+  .handbook-link { display: inline-flex; align-items: center; padding: 9px 12px; color: #536a59; border: 1px solid #b9c4bb; border-radius: 8px; font-size: 12px; text-decoration: none; white-space: nowrap; transition: background .18s ease, transform .18s ease; }
+  .handbook-link:hover { background: #e8eee9; transform: translateY(-1px); }
   .editor-link { display: inline-flex; align-items: center; gap: 7px; padding: 10px 13px; color: #f7f7f4; background: #536a59; border-radius: 8px; font-size: 12px; text-decoration: none; white-space: nowrap; transition: background .18s ease, transform .18s ease; }
   .editor-link span { font-size: 16px; line-height: .7; }
   .editor-link:hover { background: #405647; transform: translateY(-1px); }

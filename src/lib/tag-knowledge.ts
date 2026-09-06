@@ -1,7 +1,7 @@
 import type { CollectionEntry } from "astro:content";
 import type { ProblemEntry } from "./problems";
 
-export type TopicEntry = CollectionEntry<"topics">;
+export type TopicEntry = CollectionEntry<"tagKnowledge">;
 
 export function getPublishedTopics(topics: TopicEntry[]) {
   return topics
