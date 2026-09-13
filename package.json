@@ -12,7 +12,8 @@
     "prebuild": "npm run sync:demos",
     "build": "astro check && astro build",
     "build:pages": "astro check && astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "edge": "node scripts/edge.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
@@ -25,6 +26,7 @@
     "typescript": "^5.7.0"
   },
   "devDependencies": {
+    "@playwright/cli": "0.1.19",
     "@tailwindcss/vite": "^4.1.0",
     "@types/node": "^24.13.3",
     "tailwindcss": "^4.1.0"

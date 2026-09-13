@@ -16,6 +16,39 @@ npm run dev
 
 编辑入口只在本地开发模式显示，不会发布到 GitHub Pages。
 
+## WSL 自动控制 Windows Edge
+
+安装依赖后，在 WSL 执行：
+
+```bash
+npm run edge
+```
+
+该命令自动启动或复用 Windows 原生 Edge 专用调试窗口，通过 CDP 连接
+Playwright，并打开网站。若 4321 端口的网站尚未运行，会在后台启动 Astro，
+打印服务 PID，日志写入 `output/playwright/edge-site.log`。此方式仅自动启动网站；
+需要本地编辑器时先运行 `npm run dev`。
+
+```bash
+npm run edge -- snapshot
+# 使用 snapshot 返回的实际元素引用
+npm run edge -- click <ref>
+npm run edge -- fill <ref> "兜风"
+npm run edge -- screenshot --filename output/playwright/edge.png
+npm run edge -- console error
+npm run edge -- detach
+```
+
+`detach` 断开控制并保留窗口和网站服务。再次执行 `npm run edge` 即可重新连接，
+并回到首页。可以手动关闭专用 Edge 窗口；后台网站服务可使用启动时输出的 PID
+执行 `kill <PID>` 停止。
+
+前提是 WSL 已启用 Windows 互操作、Windows 已安装 Edge，且 WSL 能访问
+Windows 的 `127.0.0.1:9333`。脚本不修改网络或防火墙配置，连接失败会明确报错。
+浏览器使用 `%LOCALAPPDATA%\AgentBrowser\personal-site-edge` 独立配置目录，
+不会使用日常 Edge 配置。调试端口固定为 9333，不应转发到公网。
+截图和日志已被 Git 忽略。
+
 ## 课程演示
 
 本地运行与构建前，脚本会从 `~/courses/Algorithm/` 同步五组实验到
