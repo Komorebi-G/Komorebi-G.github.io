@@ -4,4 +4,4 @@
 
 随后使用 `npm run edge -- snapshot` 获取元素引用，再执行 `npm run edge -- click <ref>`、`npm run edge -- fill <ref> "文本"` 等操作。截图保存到 `output/playwright/`，例如 `npm run edge -- screenshot --filename output/playwright/edge.png`。使用 `npm run edge -- console error` 检查报错。结束控制可执行 `npm run edge -- detach`，保留窗口供用户查看。
 
-专用会话为 `personal-site-edge`，调试端口为 localhost:9333，Windows 配置目录为 `%LOCALAPPDATA%\AgentBrowser\personal-site-edge`。仅连接该专用实例；不接管日常 Edge 配置，不关闭其他浏览器，不自动修改防火墙。若连接失败，报告原因并可继续使用 WSL 无头 Playwright。
+专用会话为 `personal-site-edge`，调试端口为 localhost:9333，Windows 配置目录为 `%LOCALAPPDATA%\AgentBrowser\personal-site-edge`。仅连接该专用实例；不接管日常 Edge 配置，不关闭其他浏览器，不自动修改防火墙。若连接失败，报告原因，不得回退到 WSL/Linux 浏览器。跨项目浏览器操作遵循全局 `wsl-windows-edge` 技能。
