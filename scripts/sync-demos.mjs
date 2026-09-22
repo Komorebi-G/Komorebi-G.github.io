@@ -1,23 +1,23 @@
-import { cp, mkdir, readdir } from "node:fs/promises";
+import { access, cp, mkdir, readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { demos } from "../src/data/demos.mjs";
 
 const sourceRoot = join(homedir(), "courses", "Algorithm");
 const targetRoot = join(process.cwd(), "public", "demos");
 
-const experiments = [
-  { source: "exp2/output", slug: "closest-pair", dataFrom: "exp2" },
-  { source: "exp3/visualization", slug: "graph-coloring" },
-  { source: "exp4/visualization", slug: "egg-drop" },
-  { source: "exp5/visualization", slug: "bridge" },
-  { source: "exp6/visualization", slug: "maxflow" },
-];
-
 const companionExtensions = new Set([".json", ".jsonl", ".js"]);
 
-for (const experiment of experiments) {
+for (const experiment of demos) {
   const sourceDir = join(sourceRoot, experiment.source);
   const targetDir = join(targetRoot, experiment.slug);
+  try { await access(sourceDir); }
+  catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    await access(join(targetDir, "index.html"));
+    console.log(`using archived demo: ${experiment.slug}`);
+    continue;
+  }
   await mkdir(targetDir, { recursive: true });
   await cp(join(sourceDir, "index.html"), join(targetDir, "index.html"));
 

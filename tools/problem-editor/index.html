@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>题目编辑器 — LBH</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2353695a'/%3E%3Cpath d='M17 18h9v21h20v8H17z' fill='white'/%3E%3C/svg%3E">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./editor.css">
+    <link rel="stylesheet" href="./shared/katex/katex.min.css">
   </head>
   <body>
     <div class="app">
@@ -18,7 +16,7 @@
             <span class="mark">LBH</span>
             <p>Problem Editor</p>
           </div>
-          <button id="new-problem" class="icon-button" type="button" title="新建题目（Ctrl+N）">＋</button>
+          <button id="new-problem" class="icon-button" type="button" title="新建题目（Ctrl+N）">＋ 新题</button>
         </header>
 
         <nav class="editor-switch" aria-label="编辑器类型">
@@ -31,8 +29,9 @@
           <input id="list-search" type="search" placeholder="搜索已有题目">
         </label>
         <div id="problem-list" class="problem-list"></div>
-        <footer><span id="archive-count">0 道题</span><span>LOCAL ONLY</span></footer>
+        <footer><span id="archive-count">0 道题</span><a href="/problems">返回归档 ↗</a></footer>
       </aside>
+      <button class="sidebar-backdrop" type="button" aria-label="收起题目列表"></button>
 
       <main>
         <header class="topbar">
@@ -43,6 +42,7 @@
             <span id="save-state">尚未修改</span>
           </div>
           <div class="top-actions">
+            <button id="toggle-preview" type="button" aria-expanded="false" aria-controls="preview">预览</button>
             <button id="clear-draft" type="button">放弃修改</button>
             <button id="save-problem" class="primary" type="button">
               保存题目
@@ -54,21 +54,25 @@
         <form id="problem-form" novalidate>
           <section class="editor-pane">
             <div class="editor-heading">
-              <p>NEW / EDIT PROBLEM</p>
+              <p>记下思路，留给下一次的自己。</p>
               <h1 id="editor-title">新建题目</h1>
             </div>
 
+            <div class="problem-basics">
             <div class="field full">
               <label for="url">原题链接</label>
               <input id="url" name="url" type="url" placeholder="粘贴 Codeforces、AtCoder、洛谷或牛客链接" required>
-              <small>粘贴后会自动识别平台。</small>
+              <small>平台会自动识别，日期默认为今天。</small>
             </div>
 
-            <div class="field-grid">
               <div class="field">
                 <label for="title">题目名称</label>
                 <input id="title" name="title" type="text" placeholder="Classy Numbers" required>
               </div>
+            </div>
+            <details class="optional-fields">
+              <summary>平台与日期 <span id="metadata-summary">自动填写，可调整</span></summary>
+              <div class="field-grid">
               <div class="field">
                 <label for="platform">平台</label>
                 <input id="platform" name="platform" type="text" placeholder="Codeforces" required>
@@ -77,23 +81,18 @@
                 <label for="solvedAt">完成时间</label>
                 <input id="solvedAt" name="solvedAt" type="date" required>
               </div>
-            </div>
+              </div>
+            </details>
 
             <div class="field full tag-field">
               <label for="tag-input">标签</label>
               <div id="selected-tags" class="selected-tags"></div>
               <input id="tag-input" type="text" placeholder="输入标签后按回车">
               <div id="tag-suggestions" class="tag-suggestions" hidden></div>
-              <small>使用统一标签可以让以后检索更准确。</small>
+              <small>输入后回车即可添加，也可以选择已有标签。</small>
             </div>
 
-            <div class="field full">
-              <div class="label-line">
-                <label for="statement">题目大意</label>
-                <span>Markdown · LaTeX Math</span>
-              </div>
-              <textarea id="statement" name="statement" class="statement-input" placeholder="概括题目要解决的问题；公式可以写成 $f_i$ 或 $$...$$。"></textarea>
-            </div>
+
 
             <div class="field full">
               <div class="label-line">
@@ -107,20 +106,24 @@
               <div class="label-line">
                 <label for="code">代码</label>
                 <select id="language" name="language" aria-label="代码语言">
-                  <option value="cpp">C++</option>
-                  <option value="c">C</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java</option>
-                  <option value="rust">Rust</option>
-                  <option value="text">Text</option>
                 </select>
               </div>
               <textarea id="code" name="code" class="code-input" spellcheck="false" placeholder="#include <bits/stdc++.h>"></textarea>
             </div>
+            <details id="statement-details" class="optional-fields">
+              <summary>补充题目大意 <span>可选</span></summary>
+              <div class="field full">
+              <div class="label-line">
+                <label for="statement">题目大意</label>
+                <span>Markdown · LaTeX Math</span>
+              </div>
+              <textarea id="statement" name="statement" class="statement-input" placeholder="概括题目要解决的问题；公式可以写成 $f_i$ 或 $...$。"></textarea>
+              </div>
+            </details>
           </section>
 
           <aside class="preview-pane">
-            <div class="preview-label">LIVE PREVIEW</div>
+            <div class="preview-label">文章预览</div>
             <article id="preview">
               <div class="preview-meta"><span id="preview-platform">PLATFORM</span><span id="preview-date">DATE</span></div>
               <h2 id="preview-title">题目名称</h2>

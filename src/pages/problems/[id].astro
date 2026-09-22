@@ -4,39 +4,33 @@ import { createMarkdownProcessor } from "@astrojs/markdown-remark";
 import { getCollection, render } from "astro:content";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import rehypeKatex from "rehype-katex";
-import remarkMath from "remark-math";
+import { markdownOptions } from "../../lib/markdown-options.mjs";
+import { createTagIndex } from "../../lib/tags.mjs";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Navbar from "../../components/Navbar.astro";
 import { formatDate, getExcerpt, getPublishedProblems, type ProblemEntry } from "../../lib/problems";
-import { findTopicForTag, getPublishedTopics } from "../../lib/tag-knowledge";
+import { getPublishedTopics, topicRecords } from "../../lib/tag-knowledge";
 
 export async function getStaticPaths() {
   const problems = getPublishedProblems(await getCollection("problems"));
   const topics = getPublishedTopics(await getCollection("tagKnowledge"));
-  const statementProcessor = await createMarkdownProcessor({
-    remarkPlugins: [remarkMath],
-    rehypePlugins: [rehypeKatex],
-  });
+  const statementProcessor = await createMarkdownProcessor(markdownOptions);
+  const tagIndex = createTagIndex(topicRecords(topics));
 
   return Promise.all(problems.map(async (problem, index) => {
-    let code = "";
-    try {
-      code = await readFile(join(process.cwd(), "solutions", problem.data.code), "utf8");
-    } catch {
-      code = "// 未找到代码文件";
-    }
+    const code = await readFile(join(process.cwd(), "solutions", problem.data.code), "utf8");
+    const keys = new Set(problem.data.tags.map((tag) => tagIndex.key(tag)));
 
     const related = problems
       .filter((candidate) => candidate.id !== problem.id)
       .map((candidate) => ({
         problem: candidate,
-        score: candidate.data.tags.filter((tag) => problem.data.tags.includes(tag)).length,
+        sharedTags: tagIndex.canonical(candidate.data.tags).filter((tag) => keys.has(tagIndex.key(tag))),
       }))
-      .filter(({ score }) => score > 0)
-      .sort((a, b) => b.score - a.score)
+      .filter(({ sharedTags }) => sharedTags.length > 0)
+      .sort((a, b) => b.sharedTags.length - a.sharedTags.length)
       .slice(0, 3)
-      .map(({ problem }) => problem);
+      .map(({ problem, sharedTags }) => ({ ...problem, sharedTags }));
 
     return {
       params: { id: problem.id },
@@ -49,7 +43,7 @@ export async function getStaticPaths() {
         related,
         topicLinks: Object.fromEntries(problem.data.tags.map((tag) => [
           tag,
-          findTopicForTag(topics, tag)?.id ?? "",
+          tagIndex.find(tag)?.id ?? "",
         ])),
         previous: problems[index + 1] ?? null,
         next: problems[index - 1] ?? null,
@@ -62,7 +56,7 @@ interface Props {
   problem: ProblemEntry;
   statementHtml: string;
   code: string;
-  related: ProblemEntry[];
+  related: (ProblemEntry & { sharedTags: string[] })[];
   topicLinks: Record<string, string>;
   previous: ProblemEntry | null;
   next: ProblemEntry | null;
@@ -173,7 +167,7 @@ const showEditor = import.meta.env.DEV;
               {related.map((item) => (
                 <a href={`/problems/${item.id}`}>
                   <span>{item.data.title}</span>
-                  <small>{item.data.tags.filter((tag) => problem.data.tags.includes(tag)).join(" · ")}</small>
+                  <small>{item.sharedTags.join(" · ")}</small>
                   <b>→</b>
                 </a>
               ))}

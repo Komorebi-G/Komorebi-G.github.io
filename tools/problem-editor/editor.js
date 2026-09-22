@@ -1,4 +1,8 @@
-const form = document.querySelector("#problem-form");
+import { createEditorState, createToast, requestJson, bindEditorShortcuts } from "./shared/editor-state.mjs";
+import { createPreview, bindPreviewToggle } from "./shared/preview.mjs";
+import { normalizeName, createTagIndex } from "./shared/tags.mjs";
+import { languages } from "./shared/languages.mjs";
+
 const fields = Object.fromEntries(
   ["url", "title", "platform", "solvedAt", "statement", "idea", "code", "language"]
     .map((id) => [id, document.querySelector(`#${id}`)]),
@@ -19,24 +23,29 @@ let catalog = [];
 let originalId = "";
 let dirty = false;
 let suggestionIndex = 0;
-let saveTimer;
+let loading = false;
 let autoDetectedPlatform = "";
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
 const escapeHtml = (value) => String(value)
   .replaceAll("&", "&amp;")
   .replaceAll("<", "&lt;")
   .replaceAll(">", "&gt;")
   .replaceAll('"', "&quot;");
 
-function toast(message, error = false) {
-  const node = document.querySelector("#toast");
-  node.textContent = message;
-  node.classList.toggle("error", error);
-  node.classList.add("show");
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => node.classList.remove("show"), 2200);
-}
+const toast = createToast(document.querySelector("#toast"));
+const state = createEditorState({
+  getKey: draftKey, getData: currentData, setDirty,
+  onDraft: () => { saveStateText.textContent = "草稿已自动保存"; },
+});
+const statementPreview = createPreview(document.querySelector("#preview-statement"));
+const ideaPreview = createPreview(document.querySelector("#preview-idea"));
+fields.language.innerHTML = Object.entries(languages).map(([value, language]) =>
+  '<option value="' + value + '">' + language.label + '</option>').join("");
+bindPreviewToggle(document.querySelector("#toggle-preview"), document.querySelector(".app"), "problem-editor:preview");
 
 function setDirty(value) {
   dirty = value;
@@ -54,40 +63,17 @@ function detectFromUrl(rawUrl) {
   if (isHost("atcoder.jp")) return { platform: "AtCoder" };
   if (isHost("luogu.com.cn")) return { platform: "洛谷" };
   if (isHost("nowcoder.com")) return { platform: "牛客" };
-  return null;
-}
-
-function markdownPreview(markdown) {
-  const escaped = escapeHtml(markdown || "");
-  const blocks = escaped.split(/\n{2,}/);
-  return blocks.map((block) => {
-    if (/^\$\$[\s\S]*\$\$$/.test(block)) {
-      return `<span class="math block">${block.slice(2, -2).trim()}</span>`;
-    }
-    if (block.startsWith("### ")) return `<h3>${inlineMarkdown(block.slice(4))}</h3>`;
-    if (block.startsWith("## ")) return `<h2>${inlineMarkdown(block.slice(3))}</h2>`;
-    if (block.startsWith("# ")) return `<h2>${inlineMarkdown(block.slice(2))}</h2>`;
-    if (/^[-*] /m.test(block)) {
-      const items = block.split("\n").filter(Boolean).map((line) => `<li>${inlineMarkdown(line.replace(/^[-*] /, ""))}</li>`).join("");
-      return `<ul>${items}</ul>`;
-    }
-    return `<p>${inlineMarkdown(block).replaceAll("\n", "<br>")}</p>`;
-  }).join("") || "<p>Markdown 内容会显示在这里。</p>";
-}
-
-function inlineMarkdown(value) {
-  return value
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\$([^$\n]+)\$/g, '<span class="math">$1</span>');
+  if (isHost("matiji.net")) return { platform: "码蹄集" };
+  return { platform: host };
 }
 
 function updatePreview() {
+  document.querySelector("#metadata-summary").textContent = [fields.platform.value, fields.solvedAt.value].filter(Boolean).join(" · ") || "自动填写，可调整";
   document.querySelector("#preview-title").textContent = fields.title.value || "题目名称";
   document.querySelector("#preview-platform").textContent = fields.platform.value || "PLATFORM";
   document.querySelector("#preview-date").textContent = fields.solvedAt.value || "DATE";
-  document.querySelector("#preview-statement").innerHTML = markdownPreview(fields.statement.value);
-  document.querySelector("#preview-idea").innerHTML = markdownPreview(fields.idea.value);
+  statementPreview(fields.statement.value);
+  ideaPreview(fields.idea.value);
   document.querySelector("#preview-code").textContent = fields.code.value || "// 代码预览";
   document.querySelector("#preview-tags").innerHTML = [...selectedTags]
     .map((tag) => `<span>${escapeHtml(tag)}</span>`).join("");
@@ -109,11 +95,11 @@ function renderSelectedTags() {
 }
 
 function matchingTags(query) {
-  const normalized = query.trim().toLocaleLowerCase().replace(/\s+/g, "");
+  const normalized = normalizeName(query);
   return catalog.filter((tag) => {
-    if (selectedTags.has(tag.name)) return false;
+    if ([...selectedTags].some((selected) => [tag.name, ...(tag.aliases || [])].some((name) => normalizeName(name) === normalizeName(selected)))) return false;
     const values = [tag.name, ...(tag.aliases || [])]
-      .map((item) => item.toLocaleLowerCase().replace(/\s+/g, ""));
+      .map(normalizeName);
     return !normalized || values.some((item) => item.includes(normalized));
   }).slice(0, 8);
 }
@@ -121,7 +107,7 @@ function matchingTags(query) {
 function showSuggestions() {
   const matches = matchingTags(tagInput.value);
   const custom = tagInput.value.trim();
-  if (custom && !catalog.some((tag) => tag.name.toLocaleLowerCase() === custom.toLocaleLowerCase())) {
+  if (custom && !catalog.some((tag) => [tag.name, ...(tag.aliases || [])].some((name) => normalizeName(name) === normalizeName(custom)))) {
     matches.push({ name: custom, group: "新标签" });
   }
   suggestionIndex = Math.min(suggestionIndex, Math.max(0, matches.length - 1));
@@ -140,7 +126,9 @@ function showSuggestions() {
 function addTag(tag) {
   const value = String(tag || "").trim();
   if (!value) return;
-  selectedTags.add(value);
+  const canonical = createTagIndex(catalog.map((tag) => ({ id: tag.topicId || normalizeName(tag.name), title: tag.name, aliases: tag.aliases }))).canonical([...selectedTags, value]);
+  selectedTags.clear();
+  canonical.forEach((tag) => selectedTags.add(tag));
   tagInput.value = "";
   suggestionsNode.hidden = true;
   renderSelectedTags();
@@ -167,16 +155,11 @@ function currentData() {
 }
 
 function markChanged() {
-  setDirty(true);
+  state.changed();
   updatePreview();
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    localStorage.setItem(draftKey(), JSON.stringify(currentData()));
-    saveStateText.textContent = "草稿已自动保存";
-  }, 500);
 }
 
-function fillForm(problem, isExisting = false) {
+function fillForm(problem, isExisting = false, restored = false) {
   originalId = isExisting ? problem.id : "";
   autoDetectedPlatform = "";
   for (const key of ["url", "title", "platform", "solvedAt", "statement", "idea", "code", "language"]) {
@@ -188,11 +171,15 @@ function fillForm(problem, isExisting = false) {
   for (const tag of problem.tags || []) selectedTags.add(tag);
   editorTitle.textContent = isExisting ? "编辑题目" : "新建题目";
   renderSelectedTags();
-  setDirty(false);
+  state.reset(restored);
+  document.querySelector("#statement-details").open = Boolean(fields.statement.value);
   renderProblemList();
 }
 
 function newProblem(restoreDraft = true) {
+  if (state.saving || loading) return;
+  state.flush();
+  let restored = false;
   const blank = {
     solvedAt: today(),
     language: "cpp",
@@ -201,28 +188,30 @@ function newProblem(restoreDraft = true) {
   if (restoreDraft) {
     const saved = localStorage.getItem("problem-editor:new");
     if (saved) {
-      try { Object.assign(blank, JSON.parse(saved)); } catch {}
+      try { Object.assign(blank, JSON.parse(saved)); restored = true; } catch {}
     }
   }
-  fillForm(blank, false);
+  fillForm(blank, false, restored);
   fields.url.focus();
   sidebar.classList.remove("open");
 }
 
-async function loadProblem(id) {
-  if (dirty && !confirm("当前修改尚未保存，确定切换题目吗？")) return;
-  const response = await fetch(`./api/problems/${encodeURIComponent(id)}`);
-  const problem = await response.json();
-  if (!response.ok) return toast(problem.error || "读取失败", true);
-  const draft = localStorage.getItem(`problem-editor:${id}`);
-  if (draft) {
-    try {
-      const restored = JSON.parse(draft);
-      if (confirm("找到这道题的本地草稿，是否恢复？")) Object.assign(problem, restored);
-    } catch {}
-  }
-  fillForm(problem, true);
-  sidebar.classList.remove("open");
+async function loadProblem(id, restoreDraft = true) {
+  if (state.saving || loading) return;
+  state.flush();
+  loading = true;
+  try {
+    const problem = await requestJson("./api/problems/" + encodeURIComponent(id));
+    const draft = restoreDraft ? localStorage.getItem("problem-editor:" + id) : null;
+    let restored = false;
+    if (draft) {
+      try { Object.assign(problem, JSON.parse(draft)); restored = true; } catch {}
+    }
+    fillForm(problem, true, restored);
+    sidebar.classList.remove("open");
+    if (restored) toast("已恢复这道题的本地草稿");
+  } catch (error) { toast(error.message, true); }
+  finally { loading = false; }
 }
 
 function renderProblemList() {
@@ -243,40 +232,37 @@ function renderProblemList() {
 }
 
 async function refreshProblems() {
-  const response = await fetch("./api/problems");
-  problems = await response.json();
+  [problems, catalog] = await Promise.all([requestJson("./api/problems"), requestJson("./api/tags")]);
   renderProblemList();
 }
 
 async function saveProblem() {
-  const payload = currentData();
+  if (state.saving || loading) return;
+  if (tagInput.value.trim()) addTag(tagInput.value);
   saveButton.disabled = true;
   saveStateText.textContent = "正在保存…";
   try {
-    const response = await fetch("./api/problems", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
+    const saved = await state.save((payload) => requestJson("./api/problems", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload),
+    }), (result) => {
+      originalId = result.id;
+      editorTitle.textContent = "编辑题目";
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "保存失败");
-    localStorage.removeItem(draftKey());
-    originalId = result.id;
-    editorTitle.textContent = "编辑题目";
-    setDirty(false);
-    await refreshProblems();
-    toast("题目、思路和代码已保存");
+    toast(saved.clean ? "已保存，可以继续记录下一道题" : "已保存，刚刚输入的内容仍在草稿中");
+    await refreshProblems().catch(() => toast("内容已保存，列表刷新失败，请稍后重试", true));
   } catch (error) {
     toast(error.message, true);
     setDirty(true);
-  } finally {
-    saveButton.disabled = false;
-  }
+    const field = error.field === "tags" ? tagInput : fields[error.field];
+    if (field) {
+      const section = field.closest("details");
+      if (section) section.open = true;
+      field.focus();
+    }
+  } finally { saveButton.disabled = false; }
 }
 
 async function init() {
-  const tagResponse = await fetch("./api/tags").catch(() => null);
-  if (tagResponse?.ok) catalog = await tagResponse.json();
   await refreshProblems();
   const requestedId = new URLSearchParams(window.location.search).get("id");
   if (requestedId && problems.some((problem) => problem.id === requestedId)) {
@@ -325,6 +311,7 @@ tagInput.addEventListener("keydown", (event) => {
   const matches = [...suggestionsNode.querySelectorAll("[data-add-tag]")];
   if (event.key === "ArrowDown" || event.key === "ArrowUp") {
     event.preventDefault();
+    if (!matches.length) return;
     suggestionIndex = (suggestionIndex + (event.key === "ArrowDown" ? 1 : -1) + matches.length) % matches.length;
     showSuggestions();
   } else if (event.key === "Enter" || event.key === ",") {
@@ -341,28 +328,16 @@ tagInput.addEventListener("blur", () => setTimeout(() => { suggestionsNode.hidde
 listSearch.addEventListener("input", renderProblemList);
 saveButton.addEventListener("click", saveProblem);
 document.querySelector("#new-problem").addEventListener("click", () => {
-  if (!dirty || confirm("当前修改尚未保存，确定新建题目吗？")) newProblem();
+  newProblem();
 });
 document.querySelector("#clear-draft").addEventListener("click", () => {
-  if (!confirm("确定放弃当前未保存的修改吗？")) return;
-  localStorage.removeItem(draftKey());
-  originalId ? loadProblem(originalId) : newProblem(false);
+  if (state.saving || loading || !confirm("确定放弃当前未保存的修改吗？")) return;
+  state.discard();
+  setDirty(false);
+  originalId ? loadProblem(originalId, false) : newProblem(false);
 });
 document.querySelector("#mobile-list").addEventListener("click", () => sidebar.classList.toggle("open"));
-window.addEventListener("beforeunload", (event) => {
-  if (!dirty) return;
-  event.preventDefault();
-});
-document.addEventListener("keydown", (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
-    event.preventDefault();
-    saveProblem();
-  }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") {
-    event.preventDefault();
-    if (!dirty || confirm("当前修改尚未保存，确定新建题目吗？")) newProblem();
-  }
-});
+document.querySelector(".sidebar-backdrop").addEventListener("click", () => sidebar.classList.remove("open"));
+bindEditorShortcuts({ save: saveProblem, create: newProblem, isDirty: () => dirty, flush: state.flush });
 
-// The editor serves the same catalog file through this endpoint alias.
-init();
+init().catch((error) => toast(error.message, true));

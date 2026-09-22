@@ -1,5 +1,6 @@
 :root {
-  font-family: "Space Grotesk", "Noto Serif SC", sans-serif;
+  --font-code: "Cascadia Code", "Consolas", "SFMono-Regular", monospace;
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   color: #23241f;
   background: #f4f4f0;
   font-synthesis: none;
@@ -14,7 +15,7 @@ button { cursor: pointer; }
 .sidebar header { display: flex; align-items: center; justify-content: space-between; padding: 4px 5px 22px; }
 .mark { font-size: 18px; font-weight: 700; letter-spacing: -.04em; }
 .sidebar header p { margin: 5px 0 0; color: #85877f; font: 10px/1 "IBM Plex Mono", monospace; text-transform: uppercase; }
-.icon-button { display: grid; place-items: center; width: 34px; height: 34px; color: #f8f8f5; background: #53695a; border: 0; border-radius: 9px; font-size: 21px; }
+.icon-button { display: grid; place-items: center; min-width: 64px; height: 36px; padding: 0 12px; color: #f8f8f5; background: #53695a; border: 0; border-radius: 9px; font-size: 12px; }
 .icon-button:hover { background: #3f5948; }
 .editor-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 0 13px; padding: 4px; background: rgba(255,255,255,.45); border: 1px solid #d6d8d2; border-radius: 9px; }
 .editor-switch a { padding: 7px 5px; color: #7a7d75; border-radius: 6px; font-size: 10px; text-align: center; text-decoration: none; }
@@ -46,31 +47,35 @@ main { min-width: 0; }
 .top-actions .primary:hover { background: #3e5947; }
 .top-actions kbd { color: #cbd7ce; font: 9px/1 "IBM Plex Mono", monospace; }
 .mobile-list { display: none; }
-#problem-form { display: grid; grid-template-columns: minmax(500px, 1fr) minmax(340px, .75fr); align-items: start; }
-.editor-pane { max-width: 760px; width: 100%; margin: 0 auto; padding: 62px 46px 100px; }
-.editor-heading { margin-bottom: 52px; }
+#problem-form { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.preview-pane { display: none; }
+.preview-open #problem-form { grid-template-columns: minmax(420px, 1fr) minmax(340px, .85fr); }
+.preview-open .preview-pane { display: block; }
+.editor-pane { max-width: 860px; width: 100%; margin: 0 auto; padding: 44px 46px 90px; }
+.editor-heading { margin-bottom: 34px; }
 .editor-heading p { margin: 0 0 12px; color: #888a82; font: 9px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
 .editor-heading h1 { margin: 0; font-size: 38px; letter-spacing: -.045em; }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.problem-basics { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; }
+.preview-open .problem-basics { grid-template-columns: 1fr; gap: 0; }
 .field { position: relative; margin-bottom: 28px; }
 .field label, .label-line label { display: block; margin-bottom: 9px; font-size: 12px; font-weight: 600; }
 .field input, .field textarea, .field select { width: 100%; color: #292a25; background: #fff; border: 1px solid #d9dad4; border-radius: 8px; outline: 0; transition: border .18s, box-shadow .18s; }
-.field input { height: 44px; padding: 0 13px; font-size: 13px; }
+.field input { height: 46px; padding: 0 13px; font-size: 14px; }
 .field textarea { padding: 14px; resize: vertical; }
 .field input:focus, .field textarea:focus, .field select:focus { border-color: #839688; box-shadow: 0 0 0 3px rgba(89,117,96,.1); }
 .field input[readonly] { color: #7f8179; background: #eeeeea; }
-.field small { display: block; margin-top: 7px; color: #979990; font: 10px/1.5 "Noto Serif SC", serif; }
+.field small { display: block; margin-top: 8px; color: #76796f; font: 11px/1.6 "Noto Serif SC", serif; }
 .label-line { display: flex; align-items: center; justify-content: space-between; }
 .label-line > span { color: #999b93; font: 9px/1 "IBM Plex Mono", monospace; }
 .label-line select { width: auto; padding: 4px 8px; color: #686a62; background: transparent; border: 0; font: 10px/1 "IBM Plex Mono", monospace; }
 .statement-input { min-height: 190px; font: 13px/1.85 "Noto Serif SC", serif; }
-.idea-input { min-height: 270px; font: 13px/1.85 "Noto Serif SC", serif; }
-.code-input { min-height: 420px; tab-size: 2; font: 12px/1.7 "IBM Plex Mono", monospace; }
+.idea-input { min-height: 230px; font: 15px/1.9 "Noto Serif SC", serif; }
+.code-input { min-height: 380px; tab-size: 2; font: 13px/1.75 var(--font-code); }
 .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
 .selected-tag { display: flex; align-items: center; gap: 6px; padding: 6px 8px; color: #405748; background: #e4ebe5; border: 0; border-radius: 6px; font-size: 11px; }
 .selected-tag span { color: #819086; font-size: 13px; }
-.tag-suggestions { position: absolute; z-index: 10; top: 72px; left: 0; right: 0; max-height: 220px; padding: 6px; overflow: auto; background: #fff; border: 1px solid #d5d7d0; border-radius: 8px; box-shadow: 0 16px 36px rgba(31,35,28,.12); }
-.selected-tags:not(:empty) ~ .tag-suggestions { top: 105px; }
+.tag-suggestions { position: absolute; z-index: 10; top: calc(100% - 22px); left: 0; right: 0; max-height: 220px; padding: 6px; overflow: auto; background: #fff; border: 1px solid #d5d7d0; border-radius: 8px; box-shadow: 0 16px 36px rgba(31,35,28,.12); }
 .tag-suggestions button { display: flex; justify-content: space-between; width: 100%; padding: 9px 10px; background: transparent; border: 0; border-radius: 5px; text-align: left; font-size: 12px; }
 .tag-suggestions button:hover, .tag-suggestions button.active { background: #edf1ed; }
 .tag-suggestions small { margin: 0; font: 9px/1 "IBM Plex Mono", monospace; }
@@ -85,34 +90,52 @@ main { min-width: 0; }
 .preview-section { display: flex; align-items: center; gap: 10px; margin: 38px 0 18px; font-size: 11px; }
 .preview-section span { color: #a0a29a; font: 8px/1 "IBM Plex Mono", monospace; }
 .preview-section::after { content: ""; flex: 1; height: 1px; background: #e0e1db; }
-.preview-copy { color: #4e5049; font: 12px/1.9 "Noto Serif SC", serif; overflow-wrap: anywhere; }
+.preview-copy { color: #4e5049; font: 14px/1.9 "Noto Serif SC", "Microsoft YaHei", serif; overflow-wrap: anywhere; }
 .preview-copy h2 { margin: 25px 0 8px !important; font-size: 17px !important; }
 .preview-copy h3 { margin: 20px 0 7px; font-size: 14px; }
 .preview-copy p { margin: 0 0 12px; }
-.preview-copy code { padding: 2px 4px; color: #3e5a47; background: #edf0ec; border-radius: 3px; font: 10px/1.5 "IBM Plex Mono", monospace; }
+.preview-copy code { padding: 2px 4px; color: #3e5a47; background: #edf0ec; border-radius: 3px; font: 12px/1.5 var(--font-code); }
 .preview-copy .math { color: #3d5946; font-family: "Noto Serif SC", serif; font-style: italic; }
 .preview-copy .math.block { display: block; margin: 16px 0; text-align: center; }
-#preview pre { max-height: 340px; margin: 0; padding: 15px; overflow: auto; color: #343630; background: #f5f5f2; border: 1px solid #e4e5df; border-radius: 7px; font: 9px/1.7 "IBM Plex Mono", monospace; }
+#preview pre { max-height: 340px; margin: 0; padding: 15px; overflow: auto; color: #343630; background: #f5f5f2; border: 1px solid #e4e5df; border-radius: 7px; font: 12px/1.7 var(--font-code); }
 .toast { position: fixed; z-index: 100; right: 24px; bottom: 24px; max-width: 360px; padding: 12px 16px; color: #fff; background: #35493c; border-radius: 8px; box-shadow: 0 12px 35px rgba(24,29,23,.2); font-size: 12px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.error { background: #874f47; }
-@media (max-width: 1050px) {
-  #problem-form { grid-template-columns: 1fr; }
+@media (max-width: 1100px) {
+  .preview-open #problem-form { grid-template-columns: 1fr; }
   .preview-pane { position: static; height: auto; border-top: 1px solid #dcded8; border-left: 0; }
   #preview { min-height: 0; }
 }
+.optional-fields { margin: -4px 0 26px; padding: 13px 0; border-top: 1px solid #dedfd9; border-bottom: 1px solid #dedfd9; }
+.optional-fields summary { cursor: pointer; color: #526659; font-size: 12px; }
+.optional-fields summary span { margin-left: 12px; color: #7b7e74; font-size: 11px; }
+.optional-fields[open] summary { margin-bottom: 22px; }
+.optional-fields .field { margin-bottom: 8px; }
+.sidebar footer a { color: #526659; text-decoration: none; font-size: 11px; }
+.sidebar-backdrop { display: none; }
+button:disabled { opacity: .55; cursor: wait; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #526659; outline-offset: 4px; }
+.preview-copy .katex-display { overflow-x: auto; overflow-y: hidden; padding: 6px 0; }
+.preview-copy pre code { padding: 0; background: transparent; font: inherit; }
 @media (max-width: 720px) {
+  .sidebar.open + .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 40; border: 0; background: rgba(25,35,27,.3); }
+  .topbar { height: auto; min-height: 76px; display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; padding-block: 9px; }
+  .top-actions { grid-column: 2; grid-row: 1; justify-content: flex-end; gap: 2px; }
+  .save-state { display: flex; grid-column: 1 / -1; grid-row: 2; padding-left: 4px; font-size: 10px; }
+  .back-to-archive { display: none; }
+  .field input, .field textarea { font-size: 16px; }
+  .optional-fields summary span { display: inline-block; max-width: 68%; vertical-align: bottom; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toast { right: 14px; left: 14px; bottom: 16px; max-width: none; }
   .app { display: block; }
   .sidebar { position: fixed; z-index: 50; width: min(86vw, 310px); transform: translateX(-105%); transition: transform .2s; box-shadow: 15px 0 40px rgba(23,27,21,.15); }
   .sidebar.open { transform: translateX(0); }
   .mobile-list { display: block; color: #526659; background: transparent; border: 0; font-size: 11px; }
-  .topbar { padding: 0 14px; }
-  .back-to-archive { font-size: 10px; }
-  .save-state { display: none; }
+  .topbar { padding-inline: 14px; }
   .top-actions button { padding-inline: 9px; }
   .top-actions kbd { display: none; }
   .editor-pane { padding: 42px 18px 70px; }
   .field-grid { grid-template-columns: 1fr; gap: 0; }
+  .problem-basics { grid-template-columns: 1fr; gap: 0; }
   .preview-pane { padding: 24px 14px; }
   #preview { padding: 25px 20px; }
 }

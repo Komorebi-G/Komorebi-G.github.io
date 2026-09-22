@@ -3,6 +3,7 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
+    "test": "node --test tests/*.test.mjs",
     "sync:demos": "node scripts/sync-demos.mjs",
     "build:handbook": "python3 scripts/build-contest-handbook.py",
     "problem:edit": "node scripts/problem-editor.mjs",

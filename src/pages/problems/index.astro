@@ -9,33 +9,14 @@ import {
   getPublishedProblems,
   normalizeSearchText,
 } from "../../lib/problems";
-import { findTopicForTag, getPublishedTopics } from "../../lib/tag-knowledge";
+import { getPublishedTopics, topicRecords } from "../../lib/tag-knowledge";
+import { buildTagCatalog, createTagIndex } from "../../lib/tags.mjs";
 
 const problems = getPublishedProblems(await getCollection("problems"));
 const topics = getPublishedTopics(await getCollection("tagKnowledge"));
 const showEditor = import.meta.env.DEV;
-const tagCounts = new Map<string, number>();
-
-for (const problem of problems) {
-  for (const tag of problem.data.tags) {
-    tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
-  }
-}
-
-for (const topic of topics) {
-  let count = 0;
-  for (const [tag, tagCount] of [...tagCounts]) {
-    if (findTopicForTag([topic], tag)) {
-      count += tagCount;
-      tagCounts.delete(tag);
-    }
-  }
-  tagCounts.set(topic.data.title, count);
-}
-
-const tags = [...tagCounts.entries()].sort((a, b) =>
-  a[0].localeCompare(b[0], "zh-CN"),
-);
+const tagIndex = createTagIndex(topicRecords(topics));
+const tags = buildTagCatalog(problems.map((problem) => problem.data), topicRecords(topics));
 
 const groups = new Map<string, typeof problems>();
 for (const problem of problems) {
@@ -79,7 +60,7 @@ for (const problem of problems) {
       </header>
 
       {
-        problems.length > 0 ? (
+        (problems.length > 0 || topics.length > 0) ? (
           <>
             <section class="controls" aria-label="检索与筛选">
               <div class="search-wrap">
@@ -99,8 +80,8 @@ for (const problem of problems) {
 
               <div class="filter-line">
                 <div class="tag-list" aria-label="按标签筛选">
-                  {tags.map(([tag, count]) => {
-                    const topic = findTopicForTag(topics, tag);
+                  {tags.map(({ name: tag, count, topicId, aliases }) => {
+                    const topic = tagIndex.find(tag);
                     return (
                       <span class:list={{ "tag-option": true, "has-topic": Boolean(topic) }}>
                         <button
@@ -108,7 +89,7 @@ for (const problem of problems) {
                           type="button"
                           data-tag={tag}
                           data-match-names={JSON.stringify(
-                            topic ? [topic.data.title, ...topic.data.aliases] : [tag],
+                            [tag, ...aliases],
                           )}
                           aria-pressed="false"
                         >
@@ -118,9 +99,9 @@ for (const problem of problems) {
                           topic && (
                             <a
                               class="tag-topic-link"
-                              href={`/problems/tags/${topic.id}`}
-                              title={`查看「${topic.data.title}」标签知识点`}
-                              aria-label={`查看「${topic.data.title}」标签知识点`}
+                              href={`/problems/tags/${topicId}`}
+                              title={`查看「${tag}」标签知识点`}
+                              aria-label={`查看「${tag}」标签知识点`}
                             >
                               ↗
                             </a>
@@ -150,12 +131,16 @@ for (const problem of problems) {
                     {entries.map((problem) => (
                       <article
                         class="problem-row"
-                        data-tags={JSON.stringify(problem.data.tags)}
+                        data-tags={JSON.stringify(tagIndex.canonical(problem.data.tags))}
                         data-search={normalizeSearchText(
                           [
                             problem.data.title,
                             problem.data.platform,
                             ...problem.data.tags,
+                            ...problem.data.tags.flatMap((tag) => {
+                              const topic = tagIndex.find(tag);
+                              return topic ? [topic.title, ...(topic.aliases || [])] : [];
+                            }),
                             problem.data.statement,
                             problem.body ?? "",
                           ].join(" "),
@@ -210,6 +195,7 @@ for (const problem of problems) {
   </div>
 
   <script>
+    import { normalizeName as normalize } from "../../lib/tags.mjs";
     const search = document.querySelector<HTMLInputElement>("#problem-search");
     const rows = [...document.querySelectorAll<HTMLElement>(".problem-row")];
     const groups = [...document.querySelectorAll<HTMLElement>(".month-group")];
@@ -225,8 +211,6 @@ for (const problem of problems) {
     const noResults = document.querySelector<HTMLElement>("#no-results");
     const sortButton = document.querySelector<HTMLButtonElement>("#sort-toggle");
     const selectedTags = new Set<string>();
-
-    const normalize = (value: string) => value.toLocaleLowerCase().replace(/[\s_-]+/g, "");
 
     function syncUrl() {
       const params = new URLSearchParams();
@@ -267,6 +251,7 @@ for (const problem of problems) {
     }
 
     function setTag(tag: string, enabled = !selectedTags.has(tag)) {
+      tag = [...tagMatchNames].find(([, names]) => names.some((name) => normalize(name) === normalize(tag)))?.[0] ?? tag;
       if (enabled) selectedTags.add(tag);
       else selectedTags.delete(tag);
       for (const button of tagButtons) {

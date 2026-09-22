@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Navbar from "../components/Navbar.astro";
-import { demos } from "../data/demos";
+import { demos } from "../data/demos.mjs";
 ---
 
 <BaseLayout
@@ -38,7 +38,7 @@ import { demos } from "../data/demos";
       </aside>
     </main>
 
-    <footer><span>Algorithm Design & Analysis</span><span>5 demonstrations</span></footer>
+    <footer><span>Algorithm Design & Analysis</span><span>{demos.length} demonstrations</span></footer>
   </div>
 </BaseLayout>
 

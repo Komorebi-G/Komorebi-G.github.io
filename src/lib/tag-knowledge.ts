@@ -1,5 +1,6 @@
 import type { CollectionEntry } from "astro:content";
 import type { ProblemEntry } from "./problems";
+import { normalizeName } from "./tags.mjs";
 
 export type TopicEntry = CollectionEntry<"tagKnowledge">;
 
@@ -12,10 +13,10 @@ export function getPublishedTopics(topics: TopicEntry[]) {
     );
 }
 
-export function normalizeTopicName(value: string) {
-  return value
-    .toLocaleLowerCase()
-    .replace(/[\s_-]+/g, "");
+export const normalizeTopicName = normalizeName;
+
+export function topicRecords(topics: TopicEntry[]) {
+  return topics.map((topic) => ({ id: topic.id, ...topic.data }));
 }
 
 export function getTopicNames(topic: TopicEntry) {
@@ -32,8 +33,4 @@ export function getProblemsForTopic(topic: TopicEntry, problems: ProblemEntry[])
   return problems.filter((problem) =>
     problem.data.tags.some((tag) => topicMatchesTag(topic, tag))
   );
-}
-
-export function findTopicForTag(topics: TopicEntry[], tag: string) {
-  return topics.find((topic) => topicMatchesTag(topic, tag));
 }

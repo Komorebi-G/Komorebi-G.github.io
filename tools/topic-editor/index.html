@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>知识点编辑器 — LBH</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2353695a'/%3E%3Cpath d='M17 18h9v21h20v8H17z' fill='white'/%3E%3C/svg%3E">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/editor/editor.css">
     <link rel="stylesheet" href="./editor.css">
+    <link rel="stylesheet" href="./shared/katex/katex.min.css">
   </head>
   <body>
     <div class="app">
@@ -19,7 +17,7 @@
             <span class="mark">LBH</span>
             <p>Knowledge Editor</p>
           </div>
-          <button id="new-topic" class="icon-button" type="button" title="新建标签知识点（Ctrl+N）">＋</button>
+          <button id="new-topic" class="icon-button" type="button" title="新建标签知识点（Ctrl+N）">＋ 新建</button>
         </header>
 
         <nav class="editor-switch" aria-label="编辑器类型">
@@ -32,8 +30,9 @@
           <input id="list-search" type="search" placeholder="搜索知识点">
         </label>
         <div id="topic-list" class="problem-list"></div>
-        <footer><span id="topic-count">0 个标签</span><span>LOCAL ONLY</span></footer>
+        <footer><span id="topic-count">0 个标签</span><a href="/problems">返回归档 ↗</a></footer>
       </aside>
+      <button class="sidebar-backdrop" type="button" aria-label="收起标签列表"></button>
 
       <main>
         <header class="topbar">
@@ -43,6 +42,7 @@
             <span id="save-state">尚未修改</span>
           </div>
           <div class="top-actions">
+            <button id="toggle-preview" type="button" aria-expanded="false" aria-controls="preview">预览</button>
             <a id="view-topic" href="/problems" target="_blank" hidden>查看网页</a>
             <button id="delete-topic" class="danger" type="button" hidden>删除</button>
             <button id="clear-draft" type="button">放弃修改</button>
@@ -56,7 +56,7 @@
         <form id="problem-form" novalidate>
           <section class="editor-pane">
             <div class="editor-heading">
-              <p>TAG KNOWLEDGE</p>
+              <p>把容易忘的知识，留在这里。</p>
               <h1 id="editor-title">选择一个标签</h1>
             </div>
 
@@ -78,7 +78,7 @@
           </section>
 
           <aside class="preview-pane">
-            <div class="preview-label">LIVE MARKDOWN PREVIEW</div>
+            <div class="preview-label">文章预览</div>
             <article id="preview" class="topic-preview">
               <h2 id="preview-title">专题名称</h2>
               <div class="preview-section">

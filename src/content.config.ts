@@ -1,35 +1,16 @@
-import { defineCollection, z } from "astro:content";
+import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
+import { problemSchema, topicSchema } from "./lib/content-schema.mjs";
+import { contentId } from "./lib/tags.mjs";
 
 const problems = defineCollection({
-  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/problems" }),
-  schema: z.object({
-    title: z.string().min(1),
-    url: z.string().url(),
-    platform: z.string().min(1),
-    solvedAt: z.coerce.date(),
-    tags: z.array(z.string().min(1)).min(1),
-    statement: z.string().default(""),
-    code: z.string().regex(/^[a-zA-Z0-9._-]+$/),
-    language: z
-      .enum(["cpp", "c", "python", "java", "javascript", "typescript", "rust", "text"])
-      .default("cpp"),
-    createdAt: z.coerce.date(),
-    updatedAt: z.coerce.date(),
-    draft: z.boolean().default(false),
-  }),
+  loader: glob({ pattern: "*.md", base: "./src/content/problems", generateId: ({ entry }) => contentId(entry.slice(0, -3)) }),
+  schema: problemSchema,
 });
 
 const tagKnowledge = defineCollection({
-  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/problem-tags" }),
-  schema: z.object({
-    title: z.string().min(1),
-    summary: z.string().min(1),
-    aliases: z.array(z.string().min(1)).default([]),
-    updatedAt: z.coerce.date(),
-    order: z.number().int().default(0),
-    draft: z.boolean().default(false),
-  }),
+  loader: glob({ pattern: "*.md", base: "./src/content/problem-tags", generateId: ({ entry }) => contentId(entry.slice(0, -3)) }),
+  schema: topicSchema,
 });
 
 export const collections = { problems, tagKnowledge };

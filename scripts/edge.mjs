@@ -10,6 +10,7 @@ const endpoint = 'http://127.0.0.1:9333';
 const site = 'http://localhost:4321/';
 const output = join(root, 'output/playwright');
 const args = process.argv.slice(2);
+const destination = args[0] === 'start' && args[1] ? args[1] : site;
 
 function run(command, argv) {
   const result = spawnSync(command, argv, { cwd: root, stdio: 'inherit' });
@@ -66,7 +67,7 @@ Write-Output ('Edge profile: ' + $profile)
     ]);
     const browser = await waitFor(`${endpoint}/json/version`, true);
     if (!browser.Browser?.startsWith('Edg/')) throw new Error('调试端口不是 Microsoft Edge。');
-    if (!await probe(site)) {
+    if (destination === site && !await probe(site)) {
       const log = openSync(join(output, 'edge-site.log'), 'a');
       const child = spawn(join(root, 'node_modules/.bin/astro'), ['dev', '--host', '0.0.0.0', '--port', '4321'], {
         cwd: root, detached: true, stdio: ['ignore', log, log],
@@ -78,7 +79,7 @@ Write-Output ('Edge profile: ' + $profile)
       console.log(`网站服务 PID: ${child.pid}；日志: output/playwright/edge-site.log`);
     }
     run(cli, [`-s=${session}`, 'attach', '--cdp', endpoint]);
-    run(cli, [`-s=${session}`, 'goto', site]);
+    run(cli, [`-s=${session}`, 'goto', destination]);
     console.log('已连接 Windows Edge。后续操作：npm run edge -- snapshot / click <ref> / screenshot');
   }
 } catch (error) {

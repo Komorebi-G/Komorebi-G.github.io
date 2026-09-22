@@ -1,4 +1,5 @@
 import type { CollectionEntry } from "astro:content";
+export { normalizeName as normalizeSearchText } from "./tags.mjs";
 
 export type ProblemEntry = CollectionEntry<"problems">;
 
@@ -30,8 +31,4 @@ export function getExcerpt(body: string, length = 110) {
     .replace(/\s+/g, " ")
     .trim();
   return plain.length > length ? `${plain.slice(0, length).trim()}…` : plain;
-}
-
-export function normalizeSearchText(value: string) {
-  return value.toLocaleLowerCase().replace(/\s+/g, "");
 }
