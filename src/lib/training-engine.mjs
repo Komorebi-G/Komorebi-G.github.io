@@ -46,13 +46,32 @@ export function generateTest(bank, mode, { seed = Date.now(), seenProblemIds = /
   return selected;
 }
 
+export function generateRegionalTest(rounds, mode, { seed = Date.now(), seenProblemIds = /** @type {string[]} */ ([]) } = {}) {
+  if (!Array.isArray(mode.roles) || !mode.roles.length) throw new Error(`${mode.name} 没有配置训练目标`);
+  const seen = new Set(seenProblemIds);
+  const eligible = rounds.filter((round) => mode.roles.every((role) => round[role]));
+  if (!eligible.length) throw new Error(`真赛题库无法满足 ${mode.name}`);
+
+  eligible.sort((left, right) => {
+    const leftFresh = mode.roles.filter((role) => !seen.has(left[role].id)).length;
+    const rightFresh = mode.roles.filter((role) => !seen.has(right[role].id)).length;
+    if (leftFresh !== rightFresh) return rightFresh - leftFresh;
+    return randomScore(seed, left.id) - randomScore(seed, right.id);
+  });
+
+  const round = eligible[0];
+  return { round, problems: mode.roles.map((role) => round[role]) };
+}
+
 export function codeforcesProblemIdFromUrl(value) {
   try {
     const url = new URL(value);
     if (!/(^|\.)codeforces\.com$/i.test(url.hostname)) return null;
-    const match = url.pathname.match(/\/(?:problemset\/problem\/(\d+)\/([^/]+)|contest\/(\d+)\/problem\/([^/]+))/i);
+    const match = url.pathname.match(/\/(?:problemset\/problem\/(\d+)\/([^/]+)|contest\/(\d+)\/problem\/([^/]+)|gym\/(\d+)\/problem\/([^/]+)|problemset\/gymProblem\/(\d+)\/([^/]+))/i);
     if (!match) return null;
-    return `${match[1] ?? match[3]}${(match[2] ?? match[4]).toUpperCase()}`;
+    const gymId = match[5] ?? match[7];
+    const index = (match[2] ?? match[4] ?? match[6] ?? match[8]).toUpperCase();
+    return gymId ? `gym-${gymId}-${index}` : `${match[1] ?? match[3]}${index}`;
   } catch {
     return null;
   }
@@ -73,7 +92,8 @@ export function summarizeSession(session, bank) {
     const problem = problemById.get(id);
     if (!problem) continue;
     const status = session.statuses[id] ?? "pending";
-    const entry = skillStats.get(problem.skill) ?? { skill: problem.skill, offered: 0, solved: 0, attempted: 0 };
+    const group = problem.skill ?? problem.role ?? "general";
+    const entry = skillStats.get(group) ?? { skill: group, offered: 0, solved: 0, attempted: 0 };
     entry.offered += 1;
     if (status === "solved") {
       solved += 1;
@@ -82,7 +102,7 @@ export function summarizeSession(session, bank) {
       attempted += 1;
       entry.attempted += 1;
     }
-    skillStats.set(problem.skill, entry);
+    skillStats.set(group, entry);
   }
 
   const weaknesses = [...skillStats.values()]
@@ -92,7 +112,10 @@ export function summarizeSession(session, bank) {
       const rightScore = right.attempted * 3 + right.offered - right.solved;
       return rightScore - leftScore;
     })
-    .map((entry) => ({ ...entry, label: trainingSkillLabels[entry.skill] }));
+    .map((entry) => ({
+      ...entry,
+      label: trainingSkillLabels[entry.skill] ?? ({ bronze: "铜牌关键题", silver: "银牌差异题", general: "本轮题目" })[entry.skill],
+    }));
 
   return {
     solved,
@@ -105,26 +128,34 @@ export function summarizeSession(session, bank) {
 
 export function recommendNext(history = []) {
   if (!history.length) {
-    return { modeId: "diagnostic", title: "先做一场定位赛", detail: "不用先判断自己缺什么，做完后让结果说话。" };
+    return { modeId: "medal-run", title: "建议先做铜银连续测试", detail: "从同一赛站依次完成铜牌关键题和银牌差异题，限时四小时。" };
   }
 
   const latest = history[0];
   const solved = Object.values(latest.statuses ?? {}).filter((status) => status === "solved").length;
   const total = latest.problemIds?.length ?? 0;
 
-  if (latest.modeId === "diagnostic") {
-    return solved >= 4
-      ? { modeId: "silver", title: "下一场尝试冲银专项", detail: "定位赛前四题已经能拿住，可以把训练重心向中档题推进。" }
-      : { modeId: "bronze", title: "下一场继续稳铜专项", detail: "先把前中段题的识别和实现稳定下来，收益会比盲目加难度更高。" };
+  if (latest.modeId === "medal-run") {
+    if (latest.statuses?.[latest.problemIds?.[0]] !== "solved") {
+      return { modeId: "bronze-guard", title: "建议做铜牌题专项", detail: "上一轮第一题未通过，先用单题测试继续训练这一部分。" };
+    }
+    if (solved < total) {
+      return { modeId: "silver-break", title: "建议做银牌题专项", detail: "上一轮铜牌关键题已通过，下一轮单独完成银牌差异题。" };
+    }
+    return { modeId: "silver-break", title: "建议继续银牌题专项", detail: "上一轮两题均通过，下一轮更换赛站测试银牌差异题。" };
   }
 
-  if (latest.modeId === "bronze" && solved === total && total > 0) {
-    return { modeId: "silver", title: "下一场尝试冲银专项", detail: "本轮应拿题全部完成，适合增加一道中档攻坚题。" };
+  if (latest.modeId === "bronze-guard") {
+    return solved === total && total > 0
+      ? { modeId: "medal-run", title: "建议做铜银连续测试", detail: "铜牌关键题已通过，下一轮测试连续完成两题。" }
+      : { modeId: "bronze-guard", title: "建议继续铜牌题专项", detail: "更换赛站，再测试一题铜牌关键题。" };
   }
 
-  if (latest.modeId === "silver" && solved >= 3) {
-    return { modeId: "silver", title: "继续冲银专项", detail: "保留当前强度，优先补完本轮未过题再开下一场。" };
+  if (latest.modeId === "silver-break") {
+    return solved === total && total > 0
+      ? { modeId: "medal-run", title: "建议做铜银连续测试", detail: "银牌差异题已通过，下一轮测试两题连续完成情况。" }
+      : { modeId: "silver-break", title: "先补完当前题", detail: "完成复盘并独立复现后，再开始下一场测试。" };
   }
 
-  return { modeId: "bronze", title: "下一场回到稳铜专项", detail: "先提升可解题的转化率，再向更高难度推进。" };
+  return { modeId: "medal-run", title: "建议做铜银连续测试", detail: "从同一场区域赛连续完成两道目标题。" };
 }

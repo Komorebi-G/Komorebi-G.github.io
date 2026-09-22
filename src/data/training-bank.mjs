@@ -23,7 +23,7 @@ export const trainingSkillLabels = {
 
 // 首批题池刻意选用完成量较高、题意相对稳定的经典题。rating 仅用于组卷梯度，
 // 不是 ICPC / CCPC 奖牌线。标签在交卷前不会展示，避免泄露解法方向。
-export const trainingBank = [
+export const cfDrillBank = [
   cf(4, "C", "Registration System", 1300, "foundation"),
   cf(230, "B", "T-primes", 1300, "math"),
   cf(279, "B", "Books", 1400, "search"),
@@ -73,13 +73,13 @@ export const trainingBank = [
   cf(1872, "E", "Data Structures Fan", 1500, "bitwise"),
 ];
 
-export const trainingModes = [
+export const cfDrillModes = [
   {
     id: "diagnostic",
     name: "定位赛",
     kicker: "第一次先做这个",
     durationMinutes: 150,
-    description: "从热身到攻坚各取一题，先判断速度、基础和上限分别卡在哪里。",
+    description: "从不同难度区间各取一题，用于记录速度、基础题完成率和较难题完成率。",
     slots: [[1300, 1400], [1400, 1500], [1500, 1600], [1600, 1700], [1700, 1800]],
   },
   {
@@ -101,6 +101,116 @@ export const trainingModes = [
 ];
 
 export const trainingBankMeta = {
-  updatedAt: "2026-09-22",
-  source: "Codeforces 官方题库",
+  updatedAt: "2026-09-23",
+  source: "2024 ICPC / CCPC 区域赛真题与 XCPCIO 正式队榜单",
+  methodology: "按正式队榜单复算各奖牌段过题率；分层描述的是该场比赛中的作用，不是题目的永久难度标签。",
 };
+
+const gym = (gymId, index, contest, role, solveRates) => ({
+  id: `gym-${gymId}-${index}`,
+  platform: "Codeforces Gym",
+  gymId,
+  index,
+  title: `${contest} · Problem ${index}`,
+  role,
+  solveRates,
+  url: `https://codeforces.com/problemset/gymProblem/${gymId}/${index}`,
+});
+
+// “铜牌关键题”和“银牌差异题”来自同一场真实区域赛的正式队榜单：前者是
+// 铜牌队常见题集中相对靠后的题，后者在银牌段的通过率显著高于铜牌段。
+// 它们是用于训练的榜单推导，不声称赛事官方给单题颁发了奖牌标签。
+export const regionalRounds = [
+  {
+    id: "2024-icpc-hangzhou",
+    name: "2024 ICPC 杭州站",
+    officialTeams: 366,
+    medalLine: { bronze: 4, silver: 5 },
+    scoreboardUrl: "https://board.xcpcio.com/board/icpc/49th/hangzhou",
+    bronze: gym(105657, "H", "2024 ICPC 杭州站", "bronze", { gold: 100, silver: 100, bronze: 91, all: 66 }),
+    silver: gym(105657, "M", "2024 ICPC 杭州站", "silver", { gold: 100, silver: 96, bronze: 55, all: 49 }),
+  },
+  {
+    id: "2024-icpc-nanjing",
+    name: "2024 ICPC 南京站",
+    officialTeams: 336,
+    medalLine: { bronze: 3, silver: 4 },
+    scoreboardUrl: "https://board.xcpcio.com/board/icpc/49th/nanjing",
+    bronze: gym(105484, "K", "2024 ICPC 南京站", "bronze", { gold: 100, silver: 97, bronze: 84, all: 63 }),
+    silver: gym(105484, "G", "2024 ICPC 南京站", "silver", { gold: 100, silver: 87, bronze: 37, all: 40 }),
+  },
+  {
+    id: "2024-icpc-shenyang",
+    name: "2024 ICPC 沈阳站",
+    officialTeams: 300,
+    medalLine: { bronze: 2, silver: 4 },
+    scoreboardUrl: "https://board.xcpcio.com/board/icpc/49th/shenyang",
+    bronze: gym(105578, "D", "2024 ICPC 沈阳站", "bronze", { gold: 100, silver: 100, bronze: 69, all: 57 }),
+    silver: gym(105578, "M", "2024 ICPC 沈阳站", "silver", { gold: 100, silver: 83, bronze: 10, all: 30 }),
+  },
+  {
+    id: "2024-icpc-chengdu",
+    name: "2024 ICPC 成都站",
+    officialTeams: 307,
+    medalLine: { bronze: 5, silver: 6 },
+    scoreboardUrl: "https://board.xcpcio.com/board/icpc/49th/chengdu",
+    bronze: gym(105486, "I", "2024 ICPC 成都站", "bronze", { gold: 100, silver: 100, bronze: 87, all: 58 }),
+    silver: gym(105486, "B", "2024 ICPC 成都站", "silver", { gold: 100, silver: 100, bronze: 49, all: 45 }),
+  },
+  {
+    id: "2024-ccpc-jinan",
+    name: "2024 CCPC 济南站",
+    officialTeams: 280,
+    medalLine: { bronze: 4, silver: 5 },
+    scoreboardUrl: "https://board.xcpcio.com/board/ccpc/10th/jinan",
+    bronze: gym(105540, "F", "2024 CCPC 济南站", "bronze", { gold: 100, silver: 98, bronze: 82, all: 57 }),
+    silver: gym(105540, "I", "2024 CCPC 济南站", "silver", { gold: 100, silver: 98, bronze: 56, all: 46 }),
+  },
+  {
+    id: "2024-ccpc-harbin",
+    name: "2024 CCPC 哈尔滨站",
+    officialTeams: 280,
+    medalLine: { bronze: 5, silver: 5, penaltyDecides: true },
+    scoreboardUrl: "https://board.xcpcio.com/board/ccpc/10th/harbin",
+    bronze: gym(105459, "J", "2024 CCPC 哈尔滨站", "bronze", { gold: 100, silver: 100, bronze: 95, all: 61 }),
+    silver: gym(105459, "A", "2024 CCPC 哈尔滨站", "silver", { gold: 93, silver: 59, bronze: 2, all: 22 }),
+  },
+  {
+    id: "2024-ccpc-zhengzhou",
+    name: "2024 CCPC 郑州站",
+    officialTeams: 280,
+    medalLine: { bronze: 4, silver: 5 },
+    scoreboardUrl: "https://board.xcpcio.com/board/ccpc/10th/zhengzhou",
+    bronze: gym(105632, "M", "2024 CCPC 郑州站", "bronze", { gold: 100, silver: 100, bronze: 99, all: 70 }),
+    silver: gym(105632, "C", "2024 CCPC 郑州站", "silver", { gold: 96, silver: 93, bronze: 17, all: 34 }),
+  },
+];
+
+export const trainingBank = regionalRounds.flatMap((round) => [round.bronze, round.silver]);
+
+export const trainingModes = [
+  {
+    id: "medal-run",
+    name: "铜银连续测试",
+    kicker: "主训练 · 240 分钟",
+    durationMinutes: 240,
+    roles: ["bronze", "silver"],
+    description: "从同一场区域赛抽取一题铜牌关键题和一题银牌差异题，依次完成两题的代码。",
+  },
+  {
+    id: "bronze-guard",
+    name: "铜牌题专项",
+    kicker: "单题 · 120 分钟",
+    durationMinutes: 120,
+    roles: ["bronze"],
+    description: "单独训练铜牌队常见题集中相对靠后的题，不假设这部分已经稳定。",
+  },
+  {
+    id: "silver-break",
+    name: "银牌题专项",
+    kicker: "单题 · 180 分钟",
+    durationMinutes: 180,
+    roles: ["silver"],
+    description: "单独训练银牌段通过率明显高于铜牌段的题，给一题保留三小时。",
+  },
+];
