@@ -24,10 +24,31 @@ import Navbar from "../components/Navbar.astro";
       <section class="current" aria-labelledby="current-title">
         <div class="section-heading">
           <h2 id="current-title">目前的内容</h2>
-          <span>02</span>
+          <span>03</span>
         </div>
 
         <div class="content-list">
+        <a class="course-card training-card" href="/training">
+          <div class="card-copy">
+            <span class="card-label">ICPC / CCPC 训练</span>
+            <h3>稳铜，冲银</h3>
+            <p>从精选题池一键组卷，限时完成；系统避开做过的题，并根据结果建议下一轮。</p>
+            <span class="open-link">开始一场专项测试 <b>→</b></span>
+          </div>
+
+          <div class="training-visual" aria-hidden="true">
+            <div class="training-head">
+              <span>BRONZE / SESSION 01</span>
+              <strong>01:47:26</strong>
+            </div>
+            <div class="training-problem solved"><b>A</b><span>Problem A</span><i>AC</i></div>
+            <div class="training-problem solved"><b>B</b><span>Problem B</span><i>AC</i></div>
+            <div class="training-problem active"><b>C</b><span>Problem C</span><i>OPEN</i></div>
+            <div class="training-problem"><b>D</b><span>Problem D</span><i>—</i></div>
+            <div class="training-foot"><span>2 / 4 AC</span><em></em></div>
+          </div>
+        </a>
+
         <a class="course-card archive-card" href="/problems">
           <div class="card-copy">
             <span class="card-label">ICPC / 个人归档</span>
@@ -132,6 +153,23 @@ import Navbar from "../components/Navbar.astro";
   .visual-row strong { font-size: 13px; }
   .visual-row > span { padding: 4px 6px; color: #637267; background: #e4ebe5; border-radius: 4px; font-size: 9px; }
   .visual-row.faded { opacity: .55; }
+  .training-card { color: #f1f4ee; background: #18372b; border-color: #18372b; }
+  .training-card .card-label, .training-card .card-copy p { color: #aebfb3; }
+  .training-visual { display: flex; flex-direction: column; justify-content: center; padding: clamp(30px, 5vw, 58px); background: #214635; border-left: 1px solid rgba(255,255,255,.12); }
+  .training-head { display: flex; align-items: end; justify-content: space-between; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.15); }
+  .training-head span { color: #8fab99; font: 9px/1 "IBM Plex Mono", monospace; letter-spacing: .1em; }
+  .training-head strong { color: #fff; font: 500 19px/1 "IBM Plex Mono", monospace; letter-spacing: -.04em; }
+  .training-problem { display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; align-items: center; min-height: 48px; color: #789182; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 11px; }
+  .training-problem b { display: grid; place-items: center; width: 22px; height: 22px; color: #b6c6bb; background: rgba(255,255,255,.08); border-radius: 50%; font: 600 9px/1 "IBM Plex Mono", monospace; }
+  .training-problem i { color: #728b7c; font: normal 8px/1 "IBM Plex Mono", monospace; }
+  .training-problem.solved { color: #dbe5dd; }
+  .training-problem.solved b { color: #214635; background: #b7d8c0; }
+  .training-problem.solved i { color: #8fbea0; }
+  .training-problem.active { color: #fff; }
+  .training-problem.active i { color: #ff9a70; }
+  .training-foot { display: flex; align-items: center; gap: 16px; margin-top: 21px; }
+  .training-foot span { color: #c5d2c8; font: 9px/1 "IBM Plex Mono", monospace; }
+  .training-foot em { flex: 1; height: 3px; background: linear-gradient(90deg, #ff7950 50%, rgba(255,255,255,.12) 50%); border-radius: 9px; }
   footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #8b8c85; border-top: 1px solid #deddd8; font-size: 12px; }
   @keyframes draw-route { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
   @keyframes node-pulse { 50% { transform: scale(1.45); opacity: .55; } }
@@ -144,5 +182,6 @@ import Navbar from "../components/Navbar.astro";
     .card-copy { min-height: 300px; padding: 30px; }
     .card-visual { min-height: 230px; border-top: 1px solid #e1e1dc; border-left: 0; }
     .archive-visual { min-height: 250px; border-top: 1px solid #e1e1dc; border-left: 0; }
+    .training-visual { min-height: 270px; border-top: 1px solid rgba(255,255,255,.12); border-left: 0; }
   }
 </style>

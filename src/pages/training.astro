@@ -1,0 +1,712 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import { trainingBank, trainingBankMeta, trainingModes } from "../data/training-bank.mjs";
+import { codeforcesProblemIdFromUrl } from "../lib/training-engine.mjs";
+
+const archivedIds = (await getCollection("problems"))
+  .filter((problem) => !problem.data.draft)
+  .map((problem) => codeforcesProblemIdFromUrl(problem.data.url))
+  .filter((id): id is string => Boolean(id));
+---
+
+<BaseLayout
+  title="ICPC / CCPC 训练场 — LBH"
+  description="面向 ICPC 与 CCPC 铜牌到银牌阶段的个人专项测试、计时与复盘。"
+  themeColor="#18372b"
+>
+  <div class="training-page">
+    <Navbar />
+
+    <main id="training-app" data-archived-ids={JSON.stringify(archivedIds)}>
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">ICPC / CCPC TRAINING</p>
+          <h1>把铜牌打稳，<br />再向银牌推一格。</h1>
+          <p class="hero-summary">
+            不维护复杂计划，也不靠盲目刷题。每次选一套、限时做完，系统记住做过的题，
+            再根据结果安排下一轮。
+          </p>
+        </div>
+        <aside class="hero-status" aria-label="题库概况">
+          <span>CURATED POOL</span>
+          <strong>{trainingBank.length}</strong>
+          <p>道首批精选题</p>
+          <small>难度标签仅用于组卷，交卷前隐藏</small>
+        </aside>
+      </header>
+
+      <section id="setup-view" class="setup-view" hidden>
+        <div class="section-title recommendation-heading">
+          <div>
+            <span>01 / START</span>
+            <h2 id="recommendation-title">先做一场定位赛</h2>
+            <p id="recommendation-detail">不用先判断自己缺什么，做完后让结果说话。</p>
+          </div>
+          <div class="local-note"><i></i> 进度只存在这台设备</div>
+        </div>
+
+        <div class="mode-grid">
+          {trainingModes.map((mode) => (
+            <article class="mode-card" data-mode-card={mode.id}>
+              <div class="mode-top">
+                <span>{mode.kicker}</span>
+                <b data-recommended-badge hidden>推荐</b>
+              </div>
+              <h3>{mode.name}</h3>
+              <p>{mode.description}</p>
+              <dl>
+                <div><dt>时长</dt><dd>{mode.durationMinutes} min</dd></div>
+                <div><dt>题量</dt><dd>{mode.slots.length} problems</dd></div>
+              </dl>
+              <button type="button" data-start-mode={mode.id}>开始{mode.name}<span>→</span></button>
+            </article>
+          ))}
+        </div>
+
+        <section class="rhythm" aria-labelledby="rhythm-title">
+          <div class="rhythm-copy">
+            <span>02 / WEEKLY RHYTHM</span>
+            <h2 id="rhythm-title">一周只盯三件事</h2>
+            <p>这是默认节奏，不用每天打卡。忙的时候宁可少开新题，也先补完已经碰过的题。</p>
+          </div>
+          <ol class="rhythm-list">
+            <li><span>01</span><div><strong>稳铜专项 × 2</strong><small>练读题、决策和一次写对</small></div><b id="bronze-week">0 / 2</b></li>
+            <li><span>02</span><div><strong>冲银专项 × 1</strong><small>集中攻一到两道中档题</small></div><b id="silver-week">0 / 1</b></li>
+            <li><span>03</span><div><strong>补完未过题</strong><small>先独立重做，再看题解</small></div><b id="upsolve-week">0 待补</b></li>
+          </ol>
+        </section>
+
+        <section class="history-section" aria-labelledby="history-title">
+          <div class="section-title compact">
+            <div>
+              <span>03 / HISTORY</span>
+              <h2 id="history-title">最近训练</h2>
+            </div>
+            <p><b id="solved-total">0</b> 道已通过 · <b id="seen-total">0</b> 道已接触</p>
+          </div>
+          <div id="history-list" class="history-list"></div>
+        </section>
+      </section>
+
+      <section id="session-view" class="session-view" hidden aria-labelledby="session-title">
+        <header class="session-header">
+          <div>
+            <p id="session-kicker">TRAINING SESSION</p>
+            <h2 id="session-title">专项测试</h2>
+            <span id="session-progress">0 / 5 AC</span>
+          </div>
+          <div class="timer-wrap">
+            <small id="timer-label">剩余时间</small>
+            <time id="session-timer" aria-live="off">02:30:00</time>
+            <button id="pause-session" type="button">暂停</button>
+          </div>
+        </header>
+
+        <div class="contest-note">
+          <p><strong>像比赛一样做。</strong> 难度和知识点已隐藏；打开题目后自动记为“进行中”，通过时只点一次 AC。</p>
+          <span id="session-save-state">已自动保存</span>
+        </div>
+
+        <div id="session-problems" class="session-problems"></div>
+
+        <footer class="session-actions">
+          <button id="abandon-session" class="text-button" type="button">放弃本轮</button>
+          <button id="finish-session" class="finish-button" type="button">结束并复盘 <span>→</span></button>
+        </footer>
+      </section>
+
+      <section id="review-view" class="review-view" hidden aria-labelledby="review-title">
+        <header class="review-header">
+          <p>SESSION REVIEW</p>
+          <div class="review-score"><strong id="review-score">0 / 5</strong><span>本轮 AC</span></div>
+          <div class="review-conclusion">
+            <h2 id="review-title">本轮结束</h2>
+            <p id="review-detail"></p>
+          </div>
+        </header>
+
+        <div class="review-grid">
+          <section class="review-focus">
+            <span>优先处理</span>
+            <h3 id="review-focus">先补完本轮未过题</h3>
+            <p>知识点现在已经解锁。建议先独立重做；超过 30 分钟仍无进展，再看题解并隔天复现。</p>
+          </section>
+          <section class="review-next">
+            <span>下一场</span>
+            <h3 id="review-next-title">稳铜专项</h3>
+            <p id="review-next-detail"></p>
+            <button id="start-next" type="button">按建议开始 <b>→</b></button>
+          </section>
+        </div>
+
+        <div class="review-problems-wrap">
+          <div class="section-title compact">
+            <div><span>PROBLEM BREAKDOWN</span><h2>本轮题目</h2></div>
+            <p>此时显示组卷难度与训练方向</p>
+          </div>
+          <div id="review-problems" class="review-problems"></div>
+        </div>
+
+        <button id="close-review" class="back-dashboard" type="button">← 回到训练首页</button>
+      </section>
+
+      <aside class="method-note">
+        <strong>这套训练如何判断？</strong>
+        <p>
+          题池使用 Codeforces rating 控制相对梯度，并优先轮换未接触的题；它不是 ICPC / CCPC 奖牌预测器。
+          真正观察的是应拿题转化率、中档题突破率，以及未过题是否完成复现。
+        </p>
+        <a href="https://codeforces.com/problemset/" target="_blank" rel="noreferrer">题目来源：{trainingBankMeta.source} ↗</a>
+      </aside>
+    </main>
+
+    <footer class="page-footer"><span>ICPC / CCPC TRAINING</span><span>稳铜 · 冲银</span></footer>
+  </div>
+
+  <script>
+    import { trainingBank, trainingModes, trainingSkillLabels } from "../data/training-bank.mjs";
+    import { elapsedMilliseconds, generateTest, recommendNext, summarizeSession } from "../lib/training-engine.mjs";
+
+    type ProblemStatus = "pending" | "attempted" | "solved";
+    type Session = {
+      id: string;
+      modeId: string;
+      problemIds: string[];
+      statuses: Record<string, ProblemStatus>;
+      startedAt: number;
+      durationMinutes: number;
+      totalPausedMs: number;
+      pausedAt?: number | null;
+      submittedAt?: number;
+    };
+    type ProgressEntry = { status: "seen" | "solved"; updatedAt: number; source?: string };
+    type TrainingState = { active: Session | null; history: Session[]; progress: Record<string, ProgressEntry> };
+
+    const STORAGE_KEY = "lbh.icpc-training.v1";
+    const app = document.querySelector<HTMLElement>("#training-app");
+    const setupView = document.querySelector<HTMLElement>("#setup-view");
+    const sessionView = document.querySelector<HTMLElement>("#session-view");
+    const reviewView = document.querySelector<HTMLElement>("#review-view");
+    const problemById = new Map(trainingBank.map((problem) => [problem.id, problem]));
+    const modeById = new Map(trainingModes.map((mode) => [mode.id, mode]));
+    let timerHandle = 0;
+
+    function loadState(): TrainingState {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+        if (parsed && Array.isArray(parsed.history) && parsed.progress && typeof parsed.progress === "object") {
+          return { active: parsed.active ?? null, history: parsed.history, progress: parsed.progress };
+        }
+      } catch { /* 从可恢复的空状态开始 */ }
+      return { active: null, history: [], progress: {} };
+    }
+
+    const state = loadState();
+    const archivedIds: string[] = JSON.parse(app?.dataset.archivedIds ?? "[]");
+    for (const id of archivedIds) {
+      if (problemById.has(id)) state.progress[id] = { status: "solved", updatedAt: Date.now(), source: "archive" };
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const indicator = document.querySelector<HTMLElement>("#session-save-state");
+      if (indicator) {
+        indicator.textContent = "已自动保存";
+        indicator.classList.add("saved-pulse");
+        window.setTimeout(() => indicator.classList.remove("saved-pulse"), 500);
+      }
+    }
+
+    function showOnly(view: HTMLElement | null) {
+      for (const candidate of [setupView, sessionView, reviewView]) {
+        if (candidate) candidate.hidden = candidate !== view;
+      }
+      app?.classList.toggle("focus-mode", view !== setupView);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function formatClock(milliseconds: number) {
+      const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+
+    function solvedCount(session: Session) {
+      return Object.values(session.statuses).filter((status) => status === "solved").length;
+    }
+
+    function updateTimer() {
+      const session = state.active;
+      const timer = document.querySelector<HTMLTimeElement>("#session-timer");
+      const label = document.querySelector<HTMLElement>("#timer-label");
+      if (!session || !timer || !label) return;
+      const remaining = session.durationMinutes * 60_000 - elapsedMilliseconds(session);
+      timer.textContent = `${remaining < 0 ? "+" : ""}${formatClock(remaining)}`;
+      timer.classList.toggle("overtime", remaining < 0);
+      label.textContent = session.pausedAt ? "计时已暂停" : remaining < 0 ? "已经超时" : "剩余时间";
+    }
+
+    function startTimer() {
+      window.clearInterval(timerHandle);
+      updateTimer();
+      timerHandle = window.setInterval(updateTimer, 1_000);
+    }
+
+    function statusCopy(status: ProblemStatus) {
+      if (status === "solved") return "已 AC";
+      if (status === "attempted") return "进行中";
+      return "未开始";
+    }
+
+    function setProblemStatus(problemId: string, status: ProblemStatus) {
+      const session = state.active;
+      if (!session) return;
+      session.statuses[problemId] = status;
+      if (status !== "pending") {
+        const existing = state.progress[problemId];
+        state.progress[problemId] = {
+          status: status === "solved" || existing?.status === "solved" ? "solved" : "seen",
+          updatedAt: Date.now(),
+          source: existing?.source,
+        };
+      }
+      saveState();
+      renderSession();
+    }
+
+    function renderSession() {
+      const session = state.active;
+      if (!session) return;
+      const mode = modeById.get(session.modeId);
+      const title = document.querySelector<HTMLElement>("#session-title");
+      const kicker = document.querySelector<HTMLElement>("#session-kicker");
+      const progress = document.querySelector<HTMLElement>("#session-progress");
+      const pauseButton = document.querySelector<HTMLButtonElement>("#pause-session");
+      const list = document.querySelector<HTMLElement>("#session-problems");
+      if (title) title.textContent = mode?.name ?? "专项测试";
+      if (kicker) kicker.textContent = `${mode?.slots.length ?? session.problemIds.length} PROBLEMS / ${session.durationMinutes} MINUTES`;
+      if (progress) progress.textContent = `${solvedCount(session)} / ${session.problemIds.length} AC`;
+      if (pauseButton) pauseButton.textContent = session.pausedAt ? "继续计时" : "暂停";
+      if (!list) return;
+      list.replaceChildren();
+
+      session.problemIds.forEach((id, index) => {
+        const problem = problemById.get(id);
+        if (!problem) return;
+        const status = session.statuses[id] ?? "pending";
+        const row = document.createElement("article");
+        row.className = `session-problem status-${status}`;
+
+        const marker = document.createElement("span");
+        marker.className = "problem-marker";
+        marker.textContent = String.fromCharCode(65 + index);
+
+        const copy = document.createElement("div");
+        copy.className = "problem-copy";
+        const name = document.createElement("strong");
+        name.textContent = problem.title;
+        const meta = document.createElement("span");
+        meta.textContent = `${problem.platform} · ${statusCopy(status)}`;
+        copy.append(name, meta);
+
+        const open = document.createElement("a");
+        open.href = problem.url;
+        open.target = "_blank";
+        open.rel = "noreferrer";
+        open.textContent = status === "pending" ? "打开题目 ↗" : "返回题目 ↗";
+        open.addEventListener("click", () => {
+          if ((session.statuses[id] ?? "pending") === "pending") setProblemStatus(id, "attempted");
+        });
+
+        const ac = document.createElement("button");
+        ac.type = "button";
+        ac.className = "ac-button";
+        ac.setAttribute("aria-pressed", String(status === "solved"));
+        ac.textContent = status === "solved" ? "✓ AC" : "标记 AC";
+        ac.addEventListener("click", () => setProblemStatus(id, status === "solved" ? "attempted" : "solved"));
+        row.append(marker, copy, open, ac);
+        list.append(row);
+      });
+      startTimer();
+    }
+
+    function startMode(modeId: string) {
+      const mode = modeById.get(modeId);
+      if (!mode) return;
+      const now = Date.now();
+      const problems = generateTest(trainingBank, mode, {
+        seed: now,
+        seenProblemIds: Object.keys(state.progress),
+      });
+      state.active = {
+        id: `${modeId}-${now}`,
+        modeId,
+        problemIds: problems.map((problem) => problem.id),
+        statuses: {},
+        startedAt: now,
+        durationMinutes: mode.durationMinutes,
+        totalPausedMs: 0,
+        pausedAt: null,
+      };
+      saveState();
+      showOnly(sessionView);
+      renderSession();
+    }
+
+    function finishSession() {
+      const session = state.active;
+      if (!session) return;
+      const touched = Object.keys(session.statuses).length;
+      if (touched === 0 && !window.confirm("这套题还没有开始，仍然结束并复盘吗？")) return;
+      const now = Date.now();
+      if (session.pausedAt) {
+        session.totalPausedMs += now - session.pausedAt;
+        session.pausedAt = null;
+      }
+      session.submittedAt = now;
+      const finished = structuredClone(session);
+      state.history.unshift(finished);
+      state.history = state.history.slice(0, 30);
+      state.active = null;
+      saveState();
+      renderReview(finished);
+      showOnly(reviewView);
+      window.clearInterval(timerHandle);
+    }
+
+    function renderReview(session: Session) {
+      const summary = summarizeSession(session, trainingBank);
+      const mode = modeById.get(session.modeId);
+      const recommendation = recommendNext([session, ...state.history.filter((entry) => entry.id !== session.id)]);
+      const nextMode = modeById.get(recommendation.modeId);
+      const score = document.querySelector<HTMLElement>("#review-score");
+      const title = document.querySelector<HTMLElement>("#review-title");
+      const detail = document.querySelector<HTMLElement>("#review-detail");
+      const focus = document.querySelector<HTMLElement>("#review-focus");
+      const nextTitle = document.querySelector<HTMLElement>("#review-next-title");
+      const nextDetail = document.querySelector<HTMLElement>("#review-next-detail");
+      const nextButton = document.querySelector<HTMLButtonElement>("#start-next");
+      if (score) score.textContent = `${summary.solved} / ${summary.total}`;
+      if (title) title.textContent = summary.solved === summary.total ? "这轮拿得很干净。" : `${mode?.name ?? "本轮"}完成。`;
+      if (detail) detail.textContent = `${summary.attempted} 题尝试未过，${summary.skipped} 题未开始；实际用时 ${formatClock(elapsedMilliseconds(session))}。`;
+      const attemptedWeaknesses = summary.weaknesses.filter((entry) => entry.attempted > 0);
+      if (focus) focus.textContent = attemptedWeaknesses.length
+        ? `先补 ${attemptedWeaknesses.slice(0, 2).map((entry) => entry.label).join("、")}`
+        : summary.skipped > 0 ? "先完成本轮未开始题" : "保持当前节奏，继续提高速度";
+      if (nextTitle) nextTitle.textContent = nextMode?.name ?? recommendation.title;
+      if (nextDetail) nextDetail.textContent = recommendation.detail;
+      if (nextButton) nextButton.dataset.mode = recommendation.modeId;
+
+      const list = document.querySelector<HTMLElement>("#review-problems");
+      if (!list) return;
+      list.replaceChildren();
+      session.problemIds.forEach((id, index) => {
+        const problem = problemById.get(id);
+        if (!problem) return;
+        const status = session.statuses[id] ?? "pending";
+        const row = document.createElement("article");
+        row.className = `review-problem review-${status}`;
+        const indexNode = document.createElement("span");
+        indexNode.textContent = String.fromCharCode(65 + index);
+        const copy = document.createElement("div");
+        const name = document.createElement("strong");
+        name.textContent = problem.title;
+        const meta = document.createElement("small");
+        meta.textContent = `${problem.rating} · ${trainingSkillLabels[problem.skill as keyof typeof trainingSkillLabels]} · ${statusCopy(status)}`;
+        copy.append(name, meta);
+        const link = document.createElement("a");
+        link.href = problem.url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.textContent = status === "solved" ? "再看一眼 ↗" : "去补题 ↗";
+        row.append(indexNode, copy, link);
+        list.append(row);
+      });
+    }
+
+    function renderDashboard() {
+      const recommendation = recommendNext(state.history);
+      const title = document.querySelector<HTMLElement>("#recommendation-title");
+      const detail = document.querySelector<HTMLElement>("#recommendation-detail");
+      if (title) title.textContent = recommendation.title;
+      if (detail) detail.textContent = recommendation.detail;
+      document.querySelectorAll<HTMLElement>("[data-mode-card]").forEach((card) => {
+        const recommended = card.dataset.modeCard === recommendation.modeId;
+        card.classList.toggle("recommended", recommended);
+        const badge = card.querySelector<HTMLElement>("[data-recommended-badge]");
+        if (badge) badge.hidden = !recommended;
+      });
+
+      const weekStart = Date.now() - 7 * 24 * 60 * 60 * 1_000;
+      const recent = state.history.filter((session) => (session.submittedAt ?? 0) >= weekStart);
+      const bronzeCount = recent.filter((session) => session.modeId === "bronze").length;
+      const silverCount = recent.filter((session) => session.modeId === "silver").length;
+      const latestUnsolved = state.history[0]?.problemIds.filter((id) => state.history[0].statuses[id] !== "solved").length ?? 0;
+      const bronzeWeek = document.querySelector<HTMLElement>("#bronze-week");
+      const silverWeek = document.querySelector<HTMLElement>("#silver-week");
+      const upsolveWeek = document.querySelector<HTMLElement>("#upsolve-week");
+      if (bronzeWeek) bronzeWeek.textContent = `${Math.min(bronzeCount, 2)} / 2`;
+      if (silverWeek) silverWeek.textContent = `${Math.min(silverCount, 1)} / 1`;
+      if (upsolveWeek) upsolveWeek.textContent = `${latestUnsolved} 待补`;
+
+      const progressEntries = Object.values(state.progress);
+      const solvedTotal = document.querySelector<HTMLElement>("#solved-total");
+      const seenTotal = document.querySelector<HTMLElement>("#seen-total");
+      if (solvedTotal) solvedTotal.textContent = String(progressEntries.filter((entry) => entry.status === "solved").length);
+      if (seenTotal) seenTotal.textContent = String(progressEntries.length);
+
+      const historyList = document.querySelector<HTMLElement>("#history-list");
+      if (!historyList) return;
+      historyList.replaceChildren();
+      if (!state.history.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty-history";
+        empty.textContent = "还没有训练记录。第一场做定位赛就好，不必先整理计划。";
+        historyList.append(empty);
+        return;
+      }
+      state.history.slice(0, 6).forEach((session) => {
+        const row = document.createElement("article");
+        row.className = "history-row";
+        const date = document.createElement("time");
+        date.textContent = new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit" }).format(session.submittedAt ?? session.startedAt);
+        const copy = document.createElement("div");
+        const name = document.createElement("strong");
+        name.textContent = modeById.get(session.modeId)?.name ?? "专项测试";
+        const meta = document.createElement("span");
+        meta.textContent = `${formatClock(elapsedMilliseconds(session))} · ${session.problemIds.length} 题`;
+        copy.append(name, meta);
+        const result = document.createElement("b");
+        result.textContent = `${solvedCount(session)} / ${session.problemIds.length} AC`;
+        row.append(date, copy, result);
+        historyList.append(row);
+      });
+    }
+
+    document.querySelectorAll<HTMLButtonElement>("[data-start-mode]").forEach((button) => {
+      button.addEventListener("click", () => startMode(button.dataset.startMode ?? "diagnostic"));
+    });
+    document.querySelector("#pause-session")?.addEventListener("click", () => {
+      const session = state.active;
+      if (!session) return;
+      const now = Date.now();
+      if (session.pausedAt) {
+        session.totalPausedMs += now - session.pausedAt;
+        session.pausedAt = null;
+      } else {
+        session.pausedAt = now;
+      }
+      saveState();
+      renderSession();
+    });
+    document.querySelector("#finish-session")?.addEventListener("click", finishSession);
+    document.querySelector("#abandon-session")?.addEventListener("click", () => {
+      if (!state.active || !window.confirm("放弃本轮？已经接触过的题仍会保留在轮换记录中。")) return;
+      state.active = null;
+      saveState();
+      window.clearInterval(timerHandle);
+      renderDashboard();
+      showOnly(setupView);
+    });
+    document.querySelector("#start-next")?.addEventListener("click", (event) => {
+      startMode((event.currentTarget as HTMLButtonElement).dataset.mode ?? "bronze");
+    });
+    document.querySelector("#close-review")?.addEventListener("click", () => {
+      renderDashboard();
+      showOnly(setupView);
+    });
+
+    saveState();
+    if (state.active && state.active.problemIds.every((id) => problemById.has(id))) {
+      showOnly(sessionView);
+      renderSession();
+    } else {
+      state.active = null;
+      renderDashboard();
+      showOnly(setupView);
+    }
+  </script>
+</BaseLayout>
+
+<style is:global>
+  body { background: #f4f2e9; color: #1e251f; }
+  [hidden] { display: none !important; }
+  .training-page { --nav-border: rgba(255,255,255,.17); --nav-brand: #fff; --nav-link: rgba(240,245,239,.62); --nav-hover: #fff; --nav-current: #fff; min-height: 100vh; }
+  .training-page .site-header { background: #18372b; }
+  main { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+  main.focus-mode > .hero { display: none; }
+  .hero { display: grid; grid-template-columns: 1fr 260px; gap: 80px; align-items: end; width: calc(100% + 48px); margin-left: -24px; padding: 92px 24px 104px; color: #f4f4eb; background: #18372b; }
+  .hero-copy { max-width: 780px; }
+  .eyebrow, .section-title > div > span, .rhythm-copy > span, .review-header > p, .review-focus > span, .review-next > span { display: block; margin: 0 0 24px; color: #8ca496; font: 600 11px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
+  h1 { margin: 0; font-size: clamp(48px, 7vw, 82px); font-weight: 600; line-height: 1.05; letter-spacing: -.06em; text-wrap: balance; }
+  .hero-summary { max-width: 700px; margin: 32px 0 0; color: #c2cec5; font: 400 clamp(16px, 1.7vw, 19px)/1.85 "Noto Serif SC", serif; }
+  .hero-status { padding: 24px 0 6px 30px; border-left: 1px solid rgba(255,255,255,.2); }
+  .hero-status > span { color: #86a191; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
+  .hero-status strong { display: block; margin: 13px 0 2px; color: #ff8a5c; font: 600 72px/.95 "Space Grotesk", sans-serif; letter-spacing: -.07em; }
+  .hero-status p { margin: 0; color: #f0f3ed; font-size: 14px; }
+  .hero-status small { display: block; margin-top: 28px; color: #8ca095; font-size: 11px; line-height: 1.6; }
+  .setup-view, .session-view, .review-view { padding: 92px 0 116px; }
+  .section-title { display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-bottom: 34px; }
+  .section-title > div > span { margin-bottom: 17px; color: #788078; }
+  .section-title h2 { margin: 0; font-size: clamp(28px, 4vw, 42px); font-weight: 600; line-height: 1.12; letter-spacing: -.045em; }
+  .section-title > div > p { margin: 12px 0 0; color: #6a7069; font: 400 15px/1.7 "Noto Serif SC", serif; }
+  .local-note { display: flex; align-items: center; gap: 8px; color: #777c76; font-size: 11px; white-space: nowrap; }
+  .local-note i { width: 7px; height: 7px; background: #4c8c67; border-radius: 50%; box-shadow: 0 0 0 4px rgba(76,140,103,.12); }
+  .mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .mode-card { display: flex; flex-direction: column; min-height: 360px; padding: 26px; background: #fff; border: 1px solid #dedfd8; border-radius: 15px; box-shadow: 0 8px 32px rgba(29,39,31,.035); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+  .mode-card:hover { transform: translateY(-3px); box-shadow: 0 14px 38px rgba(29,39,31,.07); }
+  .mode-card.recommended { border-color: #73907e; box-shadow: inset 0 4px #2e5d46, 0 14px 38px rgba(29,39,31,.07); }
+  .mode-top { display: flex; align-items: center; justify-content: space-between; min-height: 21px; color: #82867f; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .06em; }
+  .mode-top b { padding: 5px 7px; color: #315d47; background: #e3ede6; border-radius: 99px; font: 600 10px/1 "Space Grotesk", sans-serif; letter-spacing: 0; }
+  .mode-card h3 { margin: 54px 0 17px; font-size: 31px; line-height: 1; letter-spacing: -.04em; }
+  .mode-card p { min-height: 74px; margin: 0; color: #696f68; font: 400 14px/1.75 "Noto Serif SC", serif; }
+  .mode-card dl { display: flex; gap: 28px; margin: auto 0 24px; padding-top: 26px; }
+  .mode-card dl div { display: grid; gap: 6px; }
+  .mode-card dt { color: #979a94; font-size: 10px; }
+  .mode-card dd { margin: 0; font: 500 12px/1 "IBM Plex Mono", monospace; }
+  .mode-card > button, .review-next button { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 16px; color: #f7f8f3; background: #234c39; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background .2s ease; }
+  .mode-card > button:hover, .review-next button:hover { background: #173b2b; }
+  .mode-card > button span { font-size: 18px; }
+  .rhythm { display: grid; grid-template-columns: .8fr 1.2fr; gap: 90px; margin-top: 108px; padding: 70px 0; border-top: 1px solid #d5d6cf; border-bottom: 1px solid #d5d6cf; }
+  .rhythm-copy > span { margin-bottom: 17px; color: #788078; }
+  .rhythm-copy h2 { margin: 0; font-size: 34px; letter-spacing: -.045em; }
+  .rhythm-copy p { margin: 18px 0 0; color: #6a7069; font: 400 14px/1.8 "Noto Serif SC", serif; }
+  .rhythm-list { margin: 0; padding: 0; list-style: none; }
+  .rhythm-list li { display: grid; grid-template-columns: 34px 1fr auto; gap: 18px; align-items: center; min-height: 78px; border-bottom: 1px solid #dcddd6; }
+  .rhythm-list li:last-child { border: 0; }
+  .rhythm-list li > span { color: #969b94; font: 10px/1 "IBM Plex Mono", monospace; }
+  .rhythm-list li div { display: grid; gap: 7px; }
+  .rhythm-list strong { font-size: 15px; }
+  .rhythm-list small { color: #7b807a; font-size: 12px; }
+  .rhythm-list b { color: #315c47; font: 600 12px/1 "IBM Plex Mono", monospace; }
+  .history-section { margin-top: 102px; }
+  .section-title.compact { align-items: center; padding-bottom: 20px; border-bottom: 1px solid #d5d6cf; }
+  .section-title.compact > div > span { margin-bottom: 10px; }
+  .section-title.compact h2 { font-size: 27px; }
+  .section-title.compact > p { margin: 0; color: #7c817a; font-size: 12px; }
+  .section-title.compact > p b { color: #315c47; }
+  .history-list { margin-top: -10px; }
+  .history-row { display: grid; grid-template-columns: 68px 1fr auto; gap: 24px; align-items: center; min-height: 82px; border-bottom: 1px solid #dcddd6; }
+  .history-row time { color: #8e938c; font: 11px/1 "IBM Plex Mono", monospace; }
+  .history-row div { display: grid; gap: 6px; }
+  .history-row strong { font-size: 15px; }
+  .history-row span { color: #858a83; font-size: 11px; }
+  .history-row > b { color: #315d47; font: 600 13px/1 "IBM Plex Mono", monospace; }
+  .empty-history { margin: 0; padding: 28px 0; color: #858a83; font: 400 14px/1.7 "Noto Serif SC", serif; border-bottom: 1px solid #dcddd6; }
+  .session-view { max-width: 1000px; margin: 0 auto; }
+  .session-header { display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-bottom: 48px; }
+  .session-header p { margin: 0 0 16px; color: #788078; font: 600 10px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
+  .session-header h2 { margin: 0 0 13px; font-size: clamp(42px, 6vw, 66px); line-height: 1; letter-spacing: -.055em; }
+  #session-progress { color: #5e6d62; font: 600 12px/1 "IBM Plex Mono", monospace; }
+  .timer-wrap { display: grid; justify-items: end; }
+  .timer-wrap small { color: #858a83; font-size: 11px; }
+  .timer-wrap time { margin: 8px 0 10px; font: 600 clamp(28px, 4vw, 42px)/1 "IBM Plex Mono", monospace; letter-spacing: -.06em; }
+  .timer-wrap time.overtime { color: #b0472f; }
+  .timer-wrap button { padding: 0; color: #687069; background: none; border: 0; border-bottom: 1px solid #aeb3ad; cursor: pointer; font-size: 11px; }
+  .contest-note { display: flex; align-items: center; justify-content: space-between; gap: 30px; margin-bottom: 16px; padding: 18px 20px; color: #c8d2ca; background: #234c39; border-radius: 10px; }
+  .contest-note p { margin: 0; font-size: 12px; line-height: 1.6; }
+  .contest-note strong { color: #fff; }
+  .contest-note span { color: #8eab9a; font: 10px/1 "IBM Plex Mono", monospace; white-space: nowrap; transition: color .2s ease; }
+  .contest-note span.saved-pulse { color: #fff; }
+  .session-problems { background: #fff; border: 1px solid #dedfd8; border-radius: 14px; overflow: hidden; }
+  .session-problem { display: grid; grid-template-columns: 52px 1fr auto 104px; gap: 18px; align-items: center; min-height: 108px; padding: 18px 24px; border-bottom: 1px solid #e1e2dc; transition: background .2s ease; }
+  .session-problem:last-child { border: 0; }
+  .session-problem.status-solved { background: #f1f7f2; }
+  .problem-marker { display: grid; place-items: center; width: 38px; height: 38px; color: #335f4a; background: #e8eee9; border-radius: 50%; font: 600 13px/1 "IBM Plex Mono", monospace; }
+  .status-solved .problem-marker { color: #fff; background: #3e7658; }
+  .problem-copy { display: grid; gap: 8px; min-width: 0; }
+  .problem-copy strong { overflow: hidden; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+  .problem-copy span { color: #8b9089; font-size: 11px; }
+  .session-problem a { color: #546159; font-size: 12px; text-decoration: none; white-space: nowrap; }
+  .session-problem a:hover { color: #173b2b; }
+  .ac-button { min-width: 100px; padding: 11px 14px; color: #345a46; background: transparent; border: 1px solid #b8c5bc; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .ac-button[aria-pressed="true"] { color: #fff; background: #3e7658; border-color: #3e7658; }
+  .session-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
+  .text-button { padding: 8px 0; color: #858a83; background: none; border: 0; cursor: pointer; font-size: 12px; }
+  .text-button:hover { color: #a1432f; }
+  .finish-button { display: flex; align-items: center; gap: 28px; padding: 15px 20px; color: #fff; background: #e65c35; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
+  .finish-button:hover { background: #cf4d28; }
+  .review-header { display: grid; grid-template-columns: 1fr 1.5fr; gap: 60px; position: relative; align-items: end; padding-bottom: 54px; border-bottom: 1px solid #d2d4cc; }
+  .review-header > p { position: absolute; top: 0; left: 0; margin: 0; color: #788078; }
+  .review-score { padding-top: 60px; }
+  .review-score strong { display: block; color: #315d47; font: 600 clamp(58px, 8vw, 92px)/.9 "Space Grotesk", sans-serif; letter-spacing: -.075em; }
+  .review-score span { display: block; margin-top: 16px; color: #81867f; font-size: 12px; }
+  .review-conclusion h2 { margin: 0; font-size: clamp(34px, 5vw, 56px); line-height: 1.05; letter-spacing: -.055em; }
+  .review-conclusion p { margin: 20px 0 0; color: #686f68; font: 400 14px/1.8 "Noto Serif SC", serif; }
+  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 30px; }
+  .review-focus, .review-next { min-height: 244px; padding: 30px; border-radius: 13px; }
+  .review-focus { background: #e7e9e1; }
+  .review-next { color: #eaf0ea; background: #234c39; }
+  .review-focus > span, .review-next > span { margin-bottom: 44px; color: #7b837c; }
+  .review-next > span { color: #8dab99; }
+  .review-grid h3 { margin: 0 0 14px; font-size: 24px; letter-spacing: -.035em; }
+  .review-grid p { margin: 0; color: #687069; font: 400 13px/1.75 "Noto Serif SC", serif; }
+  .review-next p { margin-bottom: 22px; color: #b9c8bd; }
+  .review-next button { margin-top: auto; color: #1d3e30; background: #dce9df; }
+  .review-next button:hover { background: #fff; }
+  .review-problems-wrap { margin-top: 86px; }
+  .review-problems { border-top: 1px solid #d5d6cf; }
+  .review-problem { display: grid; grid-template-columns: 46px 1fr auto; gap: 20px; align-items: center; min-height: 82px; border-bottom: 1px solid #dcddd6; }
+  .review-problem > span { color: #8e938c; font: 11px/1 "IBM Plex Mono", monospace; }
+  .review-problem > div { display: grid; gap: 7px; }
+  .review-problem strong { font-size: 15px; }
+  .review-problem small { color: #81867f; font-size: 11px; }
+  .review-problem a { color: #315d47; font-size: 12px; font-weight: 600; text-decoration: none; }
+  .review-solved { opacity: .65; }
+  .back-dashboard { margin-top: 42px; padding: 0; color: #687069; background: none; border: 0; cursor: pointer; font-size: 12px; }
+  .method-note { display: grid; grid-template-columns: 180px 1fr auto; gap: 30px; align-items: start; margin-bottom: 96px; padding: 25px 0; color: #6d736d; border-top: 1px solid #d5d6cf; border-bottom: 1px solid #d5d6cf; }
+  .method-note strong { color: #303a32; font-size: 12px; }
+  .method-note p { margin: 0; font: 400 12px/1.75 "Noto Serif SC", serif; }
+  .method-note a { color: #315d47; font-size: 11px; text-decoration: none; white-space: nowrap; }
+  .page-footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #898e87; border-top: 1px solid #d5d6cf; font-size: 11px; }
+  @media (max-width: 850px) {
+    .hero { grid-template-columns: 1fr; gap: 55px; }
+    .hero-status { max-width: 300px; }
+    .mode-grid { grid-template-columns: 1fr; }
+    .mode-card { min-height: 300px; }
+    .mode-card h3 { margin-top: 38px; }
+    .mode-card p { min-height: 0; }
+    .mode-card dl { margin-top: 36px; }
+    .rhythm { grid-template-columns: 1fr; gap: 44px; }
+    .method-note { grid-template-columns: 150px 1fr; }
+    .method-note a { grid-column: 2; }
+  }
+  @media (max-width: 680px) {
+    main, .page-footer { width: min(100% - 32px, 1120px); }
+    .hero { width: calc(100% + 32px); margin-left: -16px; padding: 72px 16px 78px; }
+    h1 { font-size: clamp(43px, 13vw, 62px); }
+    .hero-summary { font-size: 15px; }
+    .setup-view, .session-view, .review-view { padding: 64px 0 80px; }
+    .recommendation-heading, .section-title.compact { align-items: flex-start; flex-direction: column; gap: 18px; }
+    .mode-card { padding: 23px; }
+    .rhythm { margin-top: 76px; padding: 54px 0; }
+    .history-section { margin-top: 72px; }
+    .session-header { align-items: flex-start; flex-direction: column; gap: 30px; }
+    .timer-wrap { justify-items: start; }
+    .contest-note { align-items: flex-start; flex-direction: column; gap: 10px; }
+    .session-problem { grid-template-columns: 44px 1fr auto; gap: 12px; min-height: 124px; padding: 17px 16px; }
+    .session-problem a { grid-column: 2; }
+    .ac-button { grid-column: 3; grid-row: 1 / span 2; min-width: 76px; padding-inline: 10px; }
+    .problem-marker { width: 34px; height: 34px; }
+    .session-actions { align-items: flex-end; flex-direction: column-reverse; gap: 18px; }
+    .finish-button { width: 100%; justify-content: space-between; }
+    .review-header { grid-template-columns: 1fr; gap: 35px; }
+    .review-score { padding-top: 55px; }
+    .review-grid { grid-template-columns: 1fr; }
+    .review-focus, .review-next { min-height: 220px; }
+    .review-problem { grid-template-columns: 32px 1fr; gap: 12px; padding: 17px 0; }
+    .review-problem a { grid-column: 2; }
+    .method-note { grid-template-columns: 1fr; gap: 12px; margin-bottom: 70px; }
+    .method-note a { grid-column: 1; margin-top: 6px; }
+  }
+  @media (max-width: 390px) {
+    .rhythm-list li { grid-template-columns: 28px 1fr; }
+    .rhythm-list li > b { grid-column: 2; padding-bottom: 13px; }
+    .session-problem { grid-template-columns: 38px 1fr; }
+    .ac-button { grid-column: 2; grid-row: auto; width: 100%; }
+  }
+</style>

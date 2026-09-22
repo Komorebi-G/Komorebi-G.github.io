@@ -9,28 +9,29 @@ const isCurrent = (href: string) =>
     <a class="brand" href="/">LBH</a>
     <div class="links">
       <a href="/" aria-current={isCurrent("/") ? "page" : undefined}>首页</a>
-      <a href="/problems" aria-current={isCurrent("/problems") ? "page" : undefined}>ICPC 题目归档</a>
-      <a href="/algorithms" aria-current={isCurrent("/algorithms") ? "page" : undefined}>算法课程</a>
+      <a href="/problems" aria-current={isCurrent("/problems") ? "page" : undefined}>题目归档</a>
+      <a href="/training" aria-current={isCurrent("/training") ? "page" : undefined}>训练</a>
+      <a href="/algorithms" aria-current={isCurrent("/algorithms") ? "page" : undefined}>算法演示</a>
     </div>
   </nav>
 </header>
 
 <style>
   .site-header { position: relative; z-index: 20; width: 100%; }
-  nav { width: min(1120px, calc(100% - 48px)); height: 76px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #deddd8; }
-  .brand { color: #222320; font-size: 18px; font-weight: 720; letter-spacing: -.04em; text-decoration: none; }
+  nav { width: min(1120px, calc(100% - 48px)); height: 76px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--nav-border, #deddd8); }
+  .brand { color: var(--nav-brand, #222320); font-size: 18px; font-weight: 720; letter-spacing: -.04em; text-decoration: none; }
   .links { display: flex; align-items: center; gap: 28px; }
-  .links a { color: #666760; font-size: 14px; text-decoration: none; transition: color .2s ease; }
-  .links a:hover { color: #222320; }
-  .links a[aria-current="page"] { color: #253b2b; font-weight: 600; }
+  .links a { color: var(--nav-link, #666760); font-size: 14px; text-decoration: none; transition: color .2s ease; }
+  .links a:hover { color: var(--nav-hover, #222320); }
+  .links a[aria-current="page"] { color: var(--nav-current, #253b2b); font-weight: 600; }
   @media (max-width: 620px) {
     nav { width: min(100% - 32px, 1120px); height: 64px; }
-    .links { gap: 12px; }
+    .links { gap: 14px; }
     .links a { font-size: 12px; }
   }
   @media (max-width: 430px) {
-    .links { gap: 10px; }
-    .links a { font-size: 11px; }
+    .links { gap: 9px; }
+    .links a { font-size: 10px; }
     .brand { font-size: 16px; }
   }
 </style>
