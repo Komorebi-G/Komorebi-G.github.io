@@ -67,6 +67,17 @@ Write-Output ('Edge profile: ' + $profile)
     ]);
     const browser = await waitFor(`${endpoint}/json/version`, true);
     if (!browser.Browser?.startsWith('Edg/')) throw new Error('调试端口不是 Microsoft Edge。');
+    if (destination === site && !await probe(`http://127.0.0.1:${process.env.PROBLEM_EDITOR_PORT || 4322}/api/problems`, true)) {
+      const log = openSync(join(output, 'edge-editor.log'), 'a');
+      const child = spawn(process.execPath, [join(root, 'scripts/problem-editor.mjs'), '--no-open'], {
+        cwd: root, detached: true, stdio: ['ignore', log, log],
+      });
+      child.on('error', error => console.error(error.message));
+      child.unref();
+      closeSync(log);
+      await waitFor(`http://127.0.0.1:${process.env.PROBLEM_EDITOR_PORT || 4322}/api/problems`, true);
+      console.log(`编辑器服务 PID: ${child.pid}；日志: output/playwright/edge-editor.log`);
+    }
     if (destination === site && !await probe(site)) {
       const log = openSync(join(output, 'edge-site.log'), 'a');
       const child = spawn(join(root, 'node_modules/.bin/astro'), ['dev', '--host', '0.0.0.0', '--port', '4321'], {

@@ -84,7 +84,7 @@ export const cfDrillModes = [
   },
   {
     id: "bronze",
-    name: "稳铜专项",
+    name: "基础专项",
     kicker: "120 分钟 · 4 题",
     durationMinutes: 120,
     description: "练前中段题的识别与一次写对，目标是把应拿的题稳定拿完。",
@@ -92,7 +92,7 @@ export const cfDrillModes = [
   },
   {
     id: "silver",
-    name: "冲银专项",
+    name: "进阶专项",
     kicker: "180 分钟 · 5 题",
     durationMinutes: 180,
     description: "保留一题速度题，把主要时间压到图论、DP 和数据结构的中档题。",
@@ -191,7 +191,7 @@ export const trainingBank = regionalRounds.flatMap((round) => [round.bronze, rou
 export const trainingModes = [
   {
     id: "medal-run",
-    name: "铜银连续测试",
+    name: "同场两题练习",
     kicker: "主训练 · 240 分钟",
     durationMinutes: 240,
     roles: ["bronze", "silver"],
@@ -199,7 +199,7 @@ export const trainingModes = [
   },
   {
     id: "bronze-guard",
-    name: "铜牌题专项",
+    name: "单题练习 · 常见题",
     kicker: "单题 · 120 分钟",
     durationMinutes: 120,
     roles: ["bronze"],
@@ -207,7 +207,7 @@ export const trainingModes = [
   },
   {
     id: "silver-break",
-    name: "银牌题专项",
+    name: "单题练习 · 差异题",
     kicker: "单题 · 180 分钟",
     durationMinutes: 180,
     roles: ["silver"],

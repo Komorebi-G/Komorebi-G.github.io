@@ -9,6 +9,7 @@ const editorTarget = `http://127.0.0.1:${editorPort}`;
 
 export default defineConfig({
   site: "https://komorebi-g.github.io",
+  devToolbar: { enabled: false },
   markdown: markdownOptions,
   integrations: [{
     name: "content-integrity",

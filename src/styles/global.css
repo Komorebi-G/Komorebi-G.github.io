@@ -1,19 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
-  color: #11110f;
-  background: #ece9df;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #293329;
+  background: #fafbf7;
+  --ink: #293329;
+  --muted: #626c5f;
+  --accent: #365841;
+  --line: #e0e5da;
+  --surface: #fafbf7;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; overflow-x: hidden; }
+body { margin: 0; padding-left: 216px; min-width: 320px; overflow-x: hidden; }
 a { color: inherit; }
-button, input { font: inherit; }
-::selection { color: #f4f0e6; background: #ff4f1f; }
+button, input, textarea, select { font: inherit; }
+button, a, input, textarea, select, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid #365841; outline-offset: 4px; }
+[hidden] { display: none !important; }
+::selection { color: #fff; background: #4b6b4f; }
+.skip-link { position: fixed; top: -80px; left: 230px; z-index: 100; padding: 12px 20px; color: #fff; background: #365841; border-radius: 6px; }
+.skip-link:focus { top: 12px; }
+@media (max-width: 1000px) { body { padding-left: 180px; } }
+@media (max-width: 760px) { body { padding-left: 0; } .skip-link { left: 16px; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

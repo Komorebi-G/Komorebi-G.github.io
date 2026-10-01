@@ -13,9 +13,20 @@ import {
   elapsedMilliseconds,
   generateRegionalTest,
   generateTest,
+  getPendingProblemIds,
   recommendNext,
   summarizeSession,
 } from "../src/lib/training-engine.mjs";
+
+test("upsolve queue includes older unfinished problems once and excludes later completions", () => {
+  const history = [
+    { problemIds: ["b", "c"], statuses: { b: "attempted", c: "solved" } },
+    { problemIds: ["a", "b", "c", "d"], statuses: { a: "attempted", c: "pending", d: "solved" } },
+  ];
+  assert.deepEqual(getPendingProblemIds(history), ["b", "a"]);
+  assert.deepEqual(getPendingProblemIds(history, { b: { status: "solved" } }), ["a"]);
+  assert.deepEqual(getPendingProblemIds([], {}), []);
+});
 
 test("regional bank uses unique real Gym problems with transparent scoreboard data", () => {
   assert.equal(regionalRounds.length, 7);

@@ -22,3 +22,8 @@
   .topic-content { min-height: 480px; }
   .top-actions a { display: none; }
 }
+.topic-content { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 15px; line-height: 1.9; }
+.editor-heading { margin-bottom: 26px; }
+.top-actions a { font-size: 12px; }
+.top-actions .danger { font-size: 12px; }
+@media (max-width: 720px) { .top-actions .danger { padding-inline: 7px; } }

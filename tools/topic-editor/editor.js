@@ -53,6 +53,11 @@ function updatePreview() {
   if (currentId) viewTopic.href = `/problems/tags/${encodeURIComponent(currentId)}`;
 }
 
+function syncLocation() {
+  const query = currentId ? `?id=${encodeURIComponent(currentId)}` : currentTag ? `?tag=${encodeURIComponent(currentTag)}` : "?new=1";
+  history.replaceState(null, "", location.pathname + query);
+}
+
 function draftKey() {
   return `topic-editor:${currentId || (currentTag ? `tag:${normalize(currentTag)}` : "new")}`;
 }
@@ -81,6 +86,7 @@ function applyTopic(topic, candidateName, isExisting, restored = false) {
   field.scrollTop = 0;
   updatePreview();
   state.reset(restored);
+  syncLocation();
   renderTopicList();
   sidebar.classList.remove("open");
   (isExisting ? field : topicNameField).focus();
@@ -125,6 +131,7 @@ function newTopic(restoreDraft = true) {
   field.value = content;
   updatePreview();
   state.reset(restored);
+  syncLocation();
   renderTopicList();
   sidebar.classList.remove("open");
   topicNameField.focus();
@@ -150,6 +157,7 @@ function startTag(topic) {
   field.value = content;
   updatePreview();
   state.reset(restored);
+  syncLocation();
   renderTopicList();
   sidebar.classList.remove("open");
   field.focus();
@@ -206,6 +214,7 @@ async function saveTopic() {
       topicNameGroup.hidden = true;
       updatePreview();
     });
+    syncLocation();
     toast(saved.clean ? "知识点已保存" : "已保存，刚刚输入的内容仍在草稿中");
     await refreshTopics().catch(() => toast("内容已保存，列表刷新失败，请稍后重试", true));
   } catch (error) {
@@ -249,7 +258,9 @@ async function init() {
     const params = new URLSearchParams(location.search);
     const requestedId = params.get("id");
     const requestedTag = params.get("tag");
-    if (requestedId) {
+    if (params.has("new")) {
+      newTopic();
+    } else if (requestedId) {
       const topic = topics.find((item) => item.topicId === requestedId);
       await loadTopic(requestedId, topic?.name);
     } else if (requestedTag) {

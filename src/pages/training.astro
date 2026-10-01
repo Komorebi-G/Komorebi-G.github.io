@@ -2,10 +2,9 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Navbar from "../components/Navbar.astro";
+import "../styles/training.css";
 import {
-  cfDrillBank,
   regionalRounds,
-  trainingBank,
   trainingBankMeta,
   trainingModes,
 } from "../data/training-bank.mjs";
@@ -18,39 +17,41 @@ const archivedIds = (await getCollection("problems"))
 ---
 
 <BaseLayout
-  title="ICPC / CCPC 真赛训练 — LBH"
+  title="限时训练 — LBH"
   description="基于真实 ICPC 与 CCPC 区域赛榜单的铜牌关键题和银牌差异题专项训练。"
-  themeColor="#18372b"
+  themeColor="#fafbf7"
 >
   <div class="training-page">
     <Navbar />
 
-    <main id="training-app" data-archived-ids={JSON.stringify(archivedIds)}>
+    <main id="main-content" data-archived-ids={JSON.stringify(archivedIds)}>
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">ICPC / CCPC · REAL CONTEST TRAINING</p>
-          <h1>ICPC / CCPC<br />区域赛专项训练</h1>
+          <p class="eyebrow">PRACTICE / 区域赛练习</p>
+          <h1>限时训练</h1>
           <p class="hero-summary">
-            训练假设：你负责铜牌关键题和银牌差异题的实现；
-            队友可以参与分析、验证思路和查错。
+            从区域赛题库选择单题或两题练习，记录用时、完成情况与待补题。
           </p>
         </div>
-        <aside class="hero-status" aria-label="真赛题库概况">
-          <span>REAL REGIONALS</span>
-          <strong>{regionalRounds.length}</strong>
-          <p>场 2024 区域赛</p>
-          <small>{trainingBank.length} 道专项题 · {cfDrillBank.length} 道 CF 补弱题另存</small>
-        </aside>
+
       </header>
 
       <section id="setup-view" class="setup-view" hidden>
+        <section id="resume-card" class="resume-card" hidden aria-labelledby="resume-title">
+          <div><h2 id="resume-title">有一场未结束的训练</h2><p id="resume-detail"></p></div>
+          <div><button id="continue-session" type="button">继续训练 →</button><button id="finish-saved-session" type="button">结束并复盘</button></div>
+        </section>
+        <section class="upsolve-section" aria-labelledby="upsolve-title">
+          <div class="section-title compact"><h2 id="upsolve-title">待补题</h2><p id="pending-count" aria-live="polite"></p></div>
+          <div id="upsolve-list"></div>
+        </section>
         <div class="section-title recommendation-heading">
           <div>
             <span>01 / START</span>
-            <h2 id="recommendation-title">建议先做铜银连续测试</h2>
-            <p id="recommendation-detail">从同一赛站依次完成铜牌关键题和银牌差异题，限时四小时。</p>
+            <h2 id="recommendation-title">选择训练模式</h2>
+            <p id="recommendation-detail">根据可用时间选择，开始后可以暂停或稍后继续。</p>
           </div>
-          <div class="local-note"><i></i> 无表单，进度自动保存在本机</div>
+          <div class="local-note"><i></i> 记录保存在当前浏览器</div>
         </div>
 
         <div class="mode-grid">
@@ -66,12 +67,12 @@ const archivedIds = (await getCollection("problems"))
                 <div><dt>时长</dt><dd>{mode.durationMinutes} min</dd></div>
                 <div><dt>目标</dt><dd>{mode.roles.length} problem{mode.roles.length > 1 ? "s" : ""}</dd></div>
               </dl>
-              <button type="button" data-start-mode={mode.id}>直接开练<span>→</span></button>
+              <button type="button" data-start-mode={mode.id}>开始练习<span>→</span></button>
             </article>
           ))}
         </div>
 
-        <section class="role-map" aria-labelledby="role-title">
+        <details class="role-map"><summary>选题说明与协作方式</summary>
           <div class="role-intro">
             <span>02 / YOUR JOB</span>
             <h2 id="role-title">训练对象与协作方式</h2>
@@ -81,13 +82,13 @@ const archivedIds = (await getCollection("problems"))
             <li><b>02</b><div><strong>银牌差异题</strong><p>训练银牌段通过率明显高于铜牌段的题。</p></div></li>
             <li><b>03</b><div><strong>协作方式</strong><p>队友可参与分析、验证思路和查错，代码由你完成。</p></div></li>
           </ol>
-        </section>
+        </details>
 
         <section class="bank-section" aria-labelledby="bank-title">
           <div class="section-title compact">
             <div>
               <span>03 / REAL PROBLEM BANK</span>
-              <h2 id="bank-title">真赛题与榜单依据</h2>
+              <h2 id="bank-title">题库与榜单依据 <small>{regionalRounds.length} 场区域赛</small></h2>
             </div>
             <p>过题率均按正式队复算，直接点题号可打开原题</p>
           </div>
@@ -114,18 +115,7 @@ const archivedIds = (await getCollection("problems"))
           </div>
         </section>
 
-        <section class="rhythm" aria-labelledby="rhythm-title">
-          <div class="rhythm-copy">
-            <span>04 / WEEKLY RHYTHM</span>
-            <h2 id="rhythm-title">每周训练建议</h2>
-            <p>训练记录自动保存，只保留场次、用时和完成情况。</p>
-          </div>
-          <ol class="rhythm-list">
-            <li><span>01</span><div><strong>铜银连续测试 × 1</strong><small>同一赛站连续完成两道目标题</small></div><b id="run-week">0 / 1</b></li>
-            <li><span>02</span><div><strong>银牌题专项 × 1</strong><small>三小时完成一题银牌差异题</small></div><b id="silver-week">0 / 1</b></li>
-            <li><span>03</span><div><strong>补完未过题</strong><small>复盘后必须独立复现</small></div><b id="upsolve-week">0 待补</b></li>
-          </ol>
-        </section>
+
 
         <section class="history-section" aria-labelledby="history-title">
           <div class="section-title compact">
@@ -158,6 +148,7 @@ const archivedIds = (await getCollection("problems"))
         <div id="session-problems" class="session-problems"></div>
 
         <footer class="session-actions">
+          <button id="save-exit-session" class="text-button" type="button">暂停，稍后继续</button>
           <button id="abandon-session" class="text-button" type="button">放弃本轮</button>
           <button id="finish-session" class="finish-button" type="button">结束并复盘 <span>→</span></button>
         </footer>
@@ -206,7 +197,7 @@ const archivedIds = (await getCollection("problems"))
 
   <script>
     import { regionalRounds, trainingBank, trainingModes } from "../data/training-bank.mjs";
-    import { elapsedMilliseconds, generateRegionalTest, recommendNext, summarizeSession } from "../lib/training-engine.mjs";
+    import { elapsedMilliseconds, generateRegionalTest, getPendingProblemIds, recommendNext, summarizeSession } from "../lib/training-engine.mjs";
 
     type ProblemStatus = "pending" | "attempted" | "solved";
     type Session = {
@@ -225,7 +216,7 @@ const archivedIds = (await getCollection("problems"))
     type TrainingState = { active: Session | null; history: Session[]; progress: Record<string, ProgressEntry> };
 
     const STORAGE_KEY = "lbh.icpc-training.v2";
-    const app = document.querySelector<HTMLElement>("#training-app");
+    const app = document.querySelector<HTMLElement>("#main-content");
     const setupView = document.querySelector<HTMLElement>("#setup-view");
     const sessionView = document.querySelector<HTMLElement>("#session-view");
     const reviewView = document.querySelector<HTMLElement>("#review-view");
@@ -389,6 +380,7 @@ const archivedIds = (await getCollection("problems"))
     }
 
     function startMode(modeId: string) {
+      if (state.active) { showOnly(sessionView); renderSession(); return; }
       const mode = modeById.get(modeId);
       if (!mode) return;
       const now = Date.now();
@@ -438,7 +430,7 @@ const archivedIds = (await getCollection("problems"))
       const round = roundById.get(session.roundId);
       const recommendation = recommendNext([session, ...state.history.filter((entry) => entry.id !== session.id)]);
       const nextMode = modeById.get(recommendation.modeId);
-      const unsolvedId = session.problemIds.find((id) => session.statuses[id] !== "solved");
+      const unsolvedId = session.problemIds.find((id) => session.statuses[id] !== "solved" && state.progress[id]?.status !== "solved");
       const unsolved = unsolvedId ? problemById.get(unsolvedId) : null;
       const score = document.querySelector<HTMLElement>("#review-score");
       const title = document.querySelector<HTMLElement>("#review-title");
@@ -454,7 +446,7 @@ const archivedIds = (await getCollection("problems"))
         const bronze = session.problemIds.find((id) => problemById.get(id)?.role === "bronze");
         focus.textContent = bronze && session.statuses[bronze] !== "solved"
           ? "铜牌关键题未通过"
-          : unsolved ? "铜牌关键题通过，银牌差异题未通过" : "本轮全部通过";
+          : unsolved ? "本轮仍有未通过的题目" : "本轮全部通过";
       }
       if (nextTitle) nextTitle.textContent = unsolved ? `先补 Problem ${unsolved.index}` : nextMode?.name ?? recommendation.title;
       if (nextDetail) nextDetail.textContent = unsolved
@@ -495,28 +487,40 @@ const archivedIds = (await getCollection("problems"))
 
     function renderDashboard() {
       const recommendation = recommendNext(state.history);
+      const resume = document.querySelector<HTMLElement>("#resume-card");
+      if (resume) resume.hidden = !state.active;
+      const resumeDetail = document.querySelector("#resume-detail");
+      if (resumeDetail && state.active) resumeDetail.textContent = `${modeById.get(state.active.modeId)?.name ?? "区域赛练习"} · ${roundById.get(state.active.roundId)?.name ?? ""} · 已暂停`;
+      for (const button of document.querySelectorAll<HTMLButtonElement>("[data-start-mode]")) {
+        button.disabled = Boolean(state.active);
+        button.title = state.active ? "先继续或结束已有训练" : "";
+      }
+      const pending = getPendingProblemIds(state.history, state.progress).filter((id: string) => problemById.has(id));
+      const pendingCount = document.querySelector("#pending-count");
+      if (pendingCount) pendingCount.textContent = `${pending.length} 题`;
+      const pendingList = document.querySelector("#upsolve-list");
+      pendingList?.replaceChildren();
+      if (pendingList && !pending.length) {
+        const empty = document.createElement("p"); empty.className = "empty-history"; empty.textContent = "暂无待补题。结束训练后，未通过的题目会出现在这里。"; pendingList.append(empty);
+      }
+      for (const id of pending) {
+        const problem = problemById.get(id)!;
+        const row = document.createElement("div"); row.className = "upsolve-row";
+        const link = document.createElement("a"); link.href = problem.url; link.target = "_blank"; link.rel = "noreferrer"; link.textContent = `${problem.title} ↗`;
+        const done = document.createElement("button"); done.type = "button"; done.textContent = "标记已补"; done.setAttribute("aria-label", `标记 ${problem.title} 已补`);
+        done.addEventListener("click", () => { state.progress[id] = { status: "solved", updatedAt: Date.now(), source: "upsolve" }; saveState(); renderDashboard(); });
+        row.append(link, done); pendingList?.append(row);
+      }
       const title = document.querySelector<HTMLElement>("#recommendation-title");
       const detail = document.querySelector<HTMLElement>("#recommendation-detail");
-      if (title) title.textContent = recommendation.title;
-      if (detail) detail.textContent = recommendation.detail;
+      if (title) title.textContent = state.history.length ? recommendation.title : "选择训练模式";
+      if (detail) detail.textContent = state.history.length ? recommendation.detail : "根据可用时间选择，开始后可以暂停或稍后继续。";
       document.querySelectorAll<HTMLElement>("[data-mode-card]").forEach((card) => {
-        const recommended = card.dataset.modeCard === recommendation.modeId;
+        const recommended = state.history.length > 0 && card.dataset.modeCard === recommendation.modeId;
         card.classList.toggle("recommended", recommended);
         const badge = card.querySelector<HTMLElement>("[data-recommended-badge]");
         if (badge) badge.hidden = !recommended;
       });
-
-      const weekStart = Date.now() - 7 * 24 * 60 * 60 * 1_000;
-      const recent = state.history.filter((session) => (session.submittedAt ?? 0) >= weekStart);
-      const runCount = recent.filter((session) => session.modeId === "medal-run").length;
-      const silverCount = recent.filter((session) => session.modeId === "silver-break").length;
-      const latestUnsolved = state.history[0]?.problemIds.filter((id) => state.history[0].statuses[id] !== "solved").length ?? 0;
-      const runWeek = document.querySelector<HTMLElement>("#run-week");
-      const silverWeek = document.querySelector<HTMLElement>("#silver-week");
-      const upsolveWeek = document.querySelector<HTMLElement>("#upsolve-week");
-      if (runWeek) runWeek.textContent = `${Math.min(runCount, 1)} / 1`;
-      if (silverWeek) silverWeek.textContent = `${Math.min(silverCount, 1)} / 1`;
-      if (upsolveWeek) upsolveWeek.textContent = `${latestUnsolved} 待补`;
 
       const entries = Object.values(state.progress);
       const solvedTotal = document.querySelector<HTMLElement>("#solved-total");
@@ -547,7 +551,9 @@ const archivedIds = (await getCollection("problems"))
         copy.append(name, meta);
         const result = document.createElement("b");
         result.textContent = `${solvedCount(session)} / ${session.problemIds.length} AC`;
-        row.append(date, copy, result);
+        const review = document.createElement("button"); review.type = "button"; review.textContent = "复盘 →"; review.className = "history-review";
+        review.addEventListener("click", () => { renderReview(session); showOnly(reviewView); });
+        row.append(date, copy, result, review);
         historyList.append(row);
       });
     }
@@ -591,229 +597,25 @@ const archivedIds = (await getCollection("problems"))
       showOnly(setupView);
     });
 
-    saveState();
-    if (state.active && roundById.has(state.active.roundId) && state.active.problemIds.every((id) => problemById.has(id))) {
-      showOnly(sessionView);
-      renderSession();
-    } else {
-      state.active = null;
-      renderDashboard();
-      showOnly(setupView);
+    function pauseActive() {
+      if (state.active && !state.active.pausedAt) { state.active.pausedAt = Date.now(); saveState(); }
+      window.clearInterval(timerHandle);
     }
+    document.querySelector("#save-exit-session")?.addEventListener("click", () => { pauseActive(); renderDashboard(); showOnly(setupView); });
+    document.querySelector("#continue-session")?.addEventListener("click", () => {
+      if (!state.active) return;
+      if (state.active.pausedAt) { state.active.totalPausedMs += Date.now() - state.active.pausedAt; state.active.pausedAt = null; }
+      saveState(); showOnly(sessionView); renderSession();
+    });
+    document.querySelector("#finish-saved-session")?.addEventListener("click", finishSession);
+    window.addEventListener("pagehide", pauseActive);
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) { renderDashboard(); showOnly(setupView); }
+    });
+    if (state.active && (!roundById.has(state.active.roundId) || !state.active.problemIds.every((id) => problemById.has(id)))) state.active = null;
+    pauseActive();
+    saveState();
+    renderDashboard();
+    showOnly(setupView);
   </script>
 </BaseLayout>
-
-<style is:global>
-  body { background: #f4f2e9; color: #1e251f; }
-  [hidden] { display: none !important; }
-  .training-page { --nav-border: rgba(255,255,255,.17); --nav-brand: #fff; --nav-link: rgba(240,245,239,.62); --nav-hover: #fff; --nav-current: #fff; min-height: 100vh; }
-  .training-page .site-header { background: #18372b; }
-  main { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
-  main.focus-mode > .hero { display: none; }
-  .hero { display: grid; grid-template-columns: 1fr 260px; gap: 80px; align-items: end; width: calc(100% + 48px); margin-left: -24px; padding: 92px 24px 104px; color: #f4f4eb; background: #18372b; }
-  .hero-copy { max-width: 790px; }
-  .eyebrow, .section-title > div > span, .role-intro > span, .rhythm-copy > span, .review-header > p, .review-focus > span, .review-next > span { display: block; margin: 0 0 24px; color: #8ca496; font: 600 11px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
-  h1 { margin: 0; font-size: clamp(48px, 7vw, 82px); font-weight: 600; line-height: 1.05; letter-spacing: -.06em; text-wrap: balance; }
-  .hero-summary { max-width: 730px; margin: 32px 0 0; color: #c2cec5; font: 400 clamp(16px, 1.7vw, 19px)/1.85 "Noto Serif SC", serif; }
-  .hero-status { padding: 24px 0 6px 30px; border-left: 1px solid rgba(255,255,255,.2); }
-  .hero-status > span { color: #86a191; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
-  .hero-status strong { display: block; margin: 13px 0 2px; color: #ff8a5c; font: 600 72px/.95 "Space Grotesk", sans-serif; letter-spacing: -.07em; }
-  .hero-status p { margin: 0; color: #f0f3ed; font-size: 14px; }
-  .hero-status small { display: block; margin-top: 28px; color: #8ca095; font-size: 11px; line-height: 1.6; }
-  .setup-view, .session-view, .review-view { padding: 92px 0 116px; }
-  .section-title { display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-bottom: 34px; }
-  .section-title > div > span { margin-bottom: 17px; color: #788078; }
-  .section-title h2, .role-intro h2 { margin: 0; font-size: clamp(28px, 4vw, 42px); font-weight: 600; line-height: 1.12; letter-spacing: -.045em; }
-  .section-title > div > p { margin: 12px 0 0; color: #6a7069; font: 400 15px/1.7 "Noto Serif SC", serif; }
-  .local-note { display: flex; align-items: center; gap: 8px; color: #777c76; font-size: 11px; white-space: nowrap; }
-  .local-note i { width: 7px; height: 7px; background: #4c8c67; border-radius: 50%; box-shadow: 0 0 0 4px rgba(76,140,103,.12); }
-  .mode-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 14px; }
-  .mode-card { display: flex; flex-direction: column; min-height: 360px; padding: 26px; background: #fff; border: 1px solid #dedfd8; border-radius: 15px; box-shadow: 0 8px 32px rgba(29,39,31,.035); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
-  .mode-card:hover { transform: translateY(-3px); box-shadow: 0 14px 38px rgba(29,39,31,.07); }
-  .mode-card.recommended { border-color: #73907e; box-shadow: inset 0 4px #2e5d46, 0 14px 38px rgba(29,39,31,.07); }
-  .mode-top { display: flex; align-items: center; justify-content: space-between; min-height: 21px; color: #82867f; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .06em; }
-  .mode-top b { padding: 5px 7px; color: #315d47; background: #e3ede6; border-radius: 99px; font: 600 10px/1 "Space Grotesk", sans-serif; letter-spacing: 0; }
-  .mode-card h3 { margin: 54px 0 17px; font-size: 31px; line-height: 1; letter-spacing: -.04em; }
-  .mode-card p { min-height: 98px; margin: 0; color: #696f68; font: 400 14px/1.75 "Noto Serif SC", serif; }
-  .mode-card dl { display: flex; gap: 28px; margin: auto 0 24px; padding-top: 26px; }
-  .mode-card dl div { display: grid; gap: 6px; }
-  .mode-card dt { color: #979a94; font-size: 10px; }
-  .mode-card dd { margin: 0; font: 500 12px/1 "IBM Plex Mono", monospace; }
-  .mode-card > button, .review-next button { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 16px; color: #f7f8f3; background: #234c39; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background .2s ease; }
-  .mode-card > button:hover, .review-next button:hover { background: #173b2b; }
-  .mode-card > button span { font-size: 18px; }
-  .role-map { display: grid; grid-template-columns: .9fr 1.4fr; gap: 90px; margin-top: 108px; padding: 70px 0; border-top: 1px solid #d5d6cf; border-bottom: 1px solid #d5d6cf; }
-  .role-intro > span { margin-bottom: 17px; color: #788078; }
-  .role-intro h2 { font-size: 34px; }
-  .role-map ol { margin: 0; padding: 0; list-style: none; }
-  .role-map li { display: grid; grid-template-columns: 38px 1fr; gap: 18px; min-height: 92px; padding: 18px 0; border-bottom: 1px solid #dcddd6; }
-  .role-map li:last-child { border: 0; }
-  .role-map li > b { color: #969b94; font: 500 10px/1.6 "IBM Plex Mono", monospace; }
-  .role-map strong { font-size: 15px; }
-  .role-map p { margin: 8px 0 0; color: #737972; font: 400 13px/1.65 "Noto Serif SC", serif; }
-  .bank-section { margin-top: 104px; }
-  .section-title.compact { align-items: center; margin-bottom: 0; padding-bottom: 20px; border-bottom: 1px solid #d5d6cf; }
-  .section-title.compact > div > span { margin-bottom: 10px; }
-  .section-title.compact h2 { font-size: 27px; }
-  .section-title.compact > p { margin: 0; color: #7c817a; font-size: 12px; }
-  .section-title.compact > p b { color: #315c47; }
-  .bank-head, .bank-row { display: grid; grid-template-columns: minmax(250px, 1.35fr) minmax(130px, .72fr) minmax(190px, 1fr) 64px; gap: 20px; align-items: center; }
-  .bank-head { padding: 16px 18px 10px; color: #989c96; font: 500 9px/1 "IBM Plex Mono", monospace; letter-spacing: .08em; }
-  .bank-row { min-height: 94px; padding: 16px 18px; background: rgba(255,255,255,.55); border-bottom: 1px solid #dcddd6; }
-  .bank-row:first-child { border-top: 1px solid #dcddd6; }
-  .bank-contest { display: grid; gap: 8px; }
-  .bank-contest strong { font-size: 15px; }
-  .bank-contest small { color: #858a83; font-size: 10px; }
-  .target-link { display: grid; grid-template-columns: 31px 1fr; gap: 9px; align-items: center; color: #394a40; text-decoration: none; }
-  .target-link b { display: grid; place-items: center; width: 31px; height: 31px; color: #315d47; background: #e2ece5; border-radius: 50%; font: 600 11px/1 "IBM Plex Mono", monospace; }
-  .target-link.silver b { color: #a3442a; background: #f5e3dc; }
-  .target-link span { font-size: 10px; line-height: 1.45; }
-  .target-link:hover span, .board-link:hover { color: #173b2b; text-decoration: underline; }
-  .board-link { color: #667069; font-size: 10px; text-decoration: none; white-space: nowrap; }
-  .rhythm { display: grid; grid-template-columns: .8fr 1.2fr; gap: 90px; margin-top: 108px; padding: 70px 0; border-top: 1px solid #d5d6cf; border-bottom: 1px solid #d5d6cf; }
-  .rhythm-copy > span { margin-bottom: 17px; color: #788078; }
-  .rhythm-copy h2 { margin: 0; font-size: 34px; letter-spacing: -.045em; }
-  .rhythm-copy p { margin: 18px 0 0; color: #6a7069; font: 400 14px/1.8 "Noto Serif SC", serif; }
-  .rhythm-list { margin: 0; padding: 0; list-style: none; }
-  .rhythm-list li { display: grid; grid-template-columns: 34px 1fr auto; gap: 18px; align-items: center; min-height: 78px; border-bottom: 1px solid #dcddd6; }
-  .rhythm-list li:last-child { border: 0; }
-  .rhythm-list li > span { color: #969b94; font: 10px/1 "IBM Plex Mono", monospace; }
-  .rhythm-list li div { display: grid; gap: 7px; }
-  .rhythm-list strong { font-size: 15px; }
-  .rhythm-list small { color: #7b807a; font-size: 12px; }
-  .rhythm-list b { color: #315c47; font: 600 12px/1 "IBM Plex Mono", monospace; }
-  .history-section { margin-top: 102px; }
-  .history-list { margin-top: -1px; }
-  .history-row { display: grid; grid-template-columns: 68px 1fr auto; gap: 24px; align-items: center; min-height: 82px; border-bottom: 1px solid #dcddd6; }
-  .history-row time { color: #8e938c; font: 11px/1 "IBM Plex Mono", monospace; }
-  .history-row div { display: grid; gap: 6px; }
-  .history-row strong { font-size: 15px; }
-  .history-row span { color: #858a83; font-size: 11px; }
-  .history-row > b { color: #315d47; font: 600 13px/1 "IBM Plex Mono", monospace; }
-  .empty-history { margin: 0; padding: 28px 0; color: #858a83; font: 400 14px/1.7 "Noto Serif SC", serif; border-bottom: 1px solid #dcddd6; }
-  .session-view { max-width: 1000px; margin: 0 auto; }
-  .session-header { display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-bottom: 48px; }
-  .session-header p { margin: 0 0 16px; color: #788078; font: 600 10px/1 "IBM Plex Mono", monospace; letter-spacing: .12em; }
-  .session-header h2 { margin: 0 0 13px; font-size: clamp(42px, 6vw, 66px); line-height: 1; letter-spacing: -.055em; }
-  #session-progress { color: #5e6d62; font: 600 12px/1 "IBM Plex Mono", monospace; }
-  .timer-wrap { display: grid; justify-items: end; }
-  .timer-wrap small { color: #858a83; font-size: 11px; }
-  .timer-wrap time { margin: 8px 0 10px; font: 600 clamp(28px, 4vw, 42px)/1 "IBM Plex Mono", monospace; letter-spacing: -.06em; }
-  .timer-wrap time.overtime { color: #b0472f; }
-  .timer-wrap button { padding: 0; color: #687069; background: none; border: 0; border-bottom: 1px solid #aeb3ad; cursor: pointer; font-size: 11px; }
-  .contest-note { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 18px 20px; color: #c8d2ca; background: #234c39; border-radius: 10px; }
-  .contest-note div { display: grid; gap: 6px; }
-  .contest-note strong { color: #fff; font-size: 14px; }
-  .contest-note p { margin: 0; font-size: 11px; line-height: 1.5; }
-  .contest-note > span { color: #8eab9a; font: 10px/1 "IBM Plex Mono", monospace; white-space: nowrap; transition: color .2s ease; }
-  .contest-note > span.saved-pulse { color: #fff; }
-  .session-rule { margin: 12px 4px 18px; color: #777d76; font: 400 12px/1.65 "Noto Serif SC", serif; }
-  .session-problems { background: #fff; border: 1px solid #dedfd8; border-radius: 14px; overflow: hidden; }
-  .session-problem { display: grid; grid-template-columns: 52px 1fr auto 104px; gap: 18px; align-items: center; min-height: 124px; padding: 18px 24px; border-bottom: 1px solid #e1e2dc; transition: background .2s ease; }
-  .session-problem:last-child { border: 0; }
-  .session-problem.status-solved { background: #f1f7f2; }
-  .problem-marker { display: grid; place-items: center; width: 38px; height: 38px; color: #335f4a; background: #e8eee9; border-radius: 50%; font: 600 13px/1 "IBM Plex Mono", monospace; }
-  .role-silver .problem-marker { color: #9c4129; background: #f5e4dd; }
-  .status-solved .problem-marker { color: #fff; background: #3e7658; }
-  .problem-copy { display: grid; gap: 6px; min-width: 0; }
-  .problem-copy small { color: #9a533f; font: 600 9px/1 "IBM Plex Mono", monospace; letter-spacing: .08em; }
-  .role-bronze .problem-copy small { color: #567361; }
-  .problem-copy strong { overflow: hidden; font-size: 18px; text-overflow: ellipsis; white-space: nowrap; }
-  .problem-copy span { color: #8b9089; font-size: 11px; }
-  .session-problem a { color: #546159; font-size: 12px; text-decoration: none; white-space: nowrap; }
-  .session-problem a:hover { color: #173b2b; }
-  .ac-button { min-width: 100px; padding: 11px 14px; color: #345a46; background: transparent; border: 1px solid #b8c5bc; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; }
-  .ac-button[aria-pressed="true"] { color: #fff; background: #3e7658; border-color: #3e7658; }
-  .session-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
-  .text-button { padding: 8px 0; color: #858a83; background: none; border: 0; cursor: pointer; font-size: 12px; }
-  .text-button:hover { color: #a1432f; }
-  .finish-button { display: flex; align-items: center; gap: 28px; padding: 15px 20px; color: #fff; background: #e65c35; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
-  .finish-button:hover { background: #cf4d28; }
-  .review-header { display: grid; grid-template-columns: 1fr 1.5fr; gap: 60px; position: relative; align-items: end; padding-bottom: 54px; border-bottom: 1px solid #d2d4cc; }
-  .review-header > p { position: absolute; top: 0; left: 0; margin: 0; color: #788078; }
-  .review-score { padding-top: 60px; }
-  .review-score strong { display: block; color: #315d47; font: 600 clamp(58px, 8vw, 92px)/.9 "Space Grotesk", sans-serif; letter-spacing: -.075em; }
-  .review-score span { display: block; margin-top: 16px; color: #81867f; font-size: 12px; }
-  .review-conclusion h2 { margin: 0; font-size: clamp(34px, 5vw, 56px); line-height: 1.05; letter-spacing: -.055em; }
-  .review-conclusion p { margin: 20px 0 0; color: #686f68; font: 400 14px/1.8 "Noto Serif SC", serif; }
-  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 30px; }
-  .review-focus, .review-next { display: flex; flex-direction: column; min-height: 244px; padding: 30px; border-radius: 13px; }
-  .review-focus { background: #e7e9e1; }
-  .review-next { color: #eaf0ea; background: #234c39; }
-  .review-focus > span, .review-next > span { margin-bottom: 44px; color: #7b837c; }
-  .review-next > span { color: #8dab99; }
-  .review-grid h3 { margin: 0 0 14px; font-size: 24px; letter-spacing: -.035em; }
-  .review-grid p { margin: 0; color: #687069; font: 400 13px/1.75 "Noto Serif SC", serif; }
-  .review-next p { margin-bottom: 22px; color: #b9c8bd; }
-  .review-next button { margin-top: auto; color: #1d3e30; background: #dce9df; }
-  .review-next button:hover { background: #fff; }
-  .review-problems-wrap { margin-top: 86px; }
-  .review-problems { border-top: 1px solid #d5d6cf; }
-  .review-problem { display: grid; grid-template-columns: 46px 1fr auto; gap: 20px; align-items: center; min-height: 82px; border-bottom: 1px solid #dcddd6; }
-  .review-problem > span { color: #8e938c; font: 600 11px/1 "IBM Plex Mono", monospace; }
-  .review-problem > div { display: grid; gap: 7px; }
-  .review-problem strong { font-size: 15px; }
-  .review-problem small { color: #81867f; font-size: 11px; }
-  .review-problem a { color: #315d47; font-size: 12px; font-weight: 600; text-decoration: none; }
-  .review-solved { opacity: .65; }
-  .back-dashboard { margin-top: 42px; padding: 0; color: #687069; background: none; border: 0; cursor: pointer; font-size: 12px; }
-  .method-note { display: grid; grid-template-columns: 210px 1fr auto; gap: 30px; align-items: start; margin: 20px 0 96px; padding: 25px 0; color: #6d736d; border-top: 1px solid #d5d6cf; border-bottom: 1px solid #d5d6cf; }
-  .method-note strong { color: #303a32; font-size: 12px; }
-  .method-note p { margin: 0; font: 400 12px/1.75 "Noto Serif SC", serif; }
-  .method-note a { color: #315d47; font-size: 11px; text-decoration: none; white-space: nowrap; }
-  .page-footer { display: flex; justify-content: space-between; width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; color: #898e87; border-top: 1px solid #d5d6cf; font-size: 11px; }
-  @media (max-width: 900px) {
-    .hero { grid-template-columns: 1fr; gap: 55px; }
-    .hero-status { max-width: 340px; }
-    .mode-grid { grid-template-columns: 1fr; }
-    .mode-card { min-height: 290px; }
-    .mode-card h3 { margin-top: 38px; }
-    .mode-card p { min-height: 0; }
-    .mode-card dl { margin-top: 36px; }
-    .role-map, .rhythm { grid-template-columns: 1fr; gap: 44px; }
-    .bank-head { display: none; }
-    .bank-row { grid-template-columns: 1fr 1fr 1fr auto; }
-    .bank-contest { grid-column: 1 / -1; padding-bottom: 4px; }
-    .method-note { grid-template-columns: 180px 1fr; }
-    .method-note a { grid-column: 2; }
-  }
-  @media (max-width: 680px) {
-    main, .page-footer { width: min(100% - 32px, 1120px); }
-    .hero { width: calc(100% + 32px); margin-left: -16px; padding: 72px 16px 78px; }
-    h1 { font-size: clamp(43px, 13vw, 62px); }
-    .hero-summary { font-size: 15px; }
-    .setup-view, .session-view, .review-view { padding: 64px 0 80px; }
-    .recommendation-heading, .section-title.compact { align-items: flex-start; flex-direction: column; gap: 18px; }
-    .local-note { white-space: normal; }
-    .mode-card { padding: 23px; }
-    .role-map, .rhythm { margin-top: 76px; padding: 54px 0; }
-    .bank-section, .history-section { margin-top: 72px; }
-    .bank-row { grid-template-columns: 1fr 1.35fr; gap: 16px 10px; padding: 20px 4px; }
-    .bank-contest { grid-column: 1 / -1; }
-    .target-link { grid-template-columns: 31px 1fr; }
-    .board-link { grid-column: 1 / -1; }
-    .session-header { align-items: flex-start; flex-direction: column; gap: 30px; }
-    .timer-wrap { justify-items: start; }
-    .contest-note { align-items: flex-start; flex-direction: column; gap: 10px; }
-    .session-problem { grid-template-columns: 44px 1fr auto; gap: 12px; min-height: 136px; padding: 17px 16px; }
-    .session-problem a { grid-column: 2; }
-    .ac-button { grid-column: 3; grid-row: 1 / span 2; min-width: 76px; padding-inline: 10px; }
-    .problem-marker { width: 34px; height: 34px; }
-    .session-actions { align-items: flex-end; flex-direction: column-reverse; gap: 18px; }
-    .finish-button { width: 100%; justify-content: space-between; }
-    .review-header { grid-template-columns: 1fr; gap: 35px; }
-    .review-score { padding-top: 55px; }
-    .review-grid { grid-template-columns: 1fr; }
-    .review-focus, .review-next { min-height: 220px; }
-    .review-problem { grid-template-columns: 32px 1fr; gap: 12px; padding: 17px 0; }
-    .review-problem a { grid-column: 2; }
-    .method-note { grid-template-columns: 1fr; gap: 12px; margin-bottom: 70px; }
-    .method-note a { grid-column: 1; margin-top: 6px; }
-  }
-  @media (max-width: 390px) {
-    .rhythm-list li { grid-template-columns: 28px 1fr; }
-    .rhythm-list li > b { grid-column: 2; padding-bottom: 13px; }
-    .session-problem { grid-template-columns: 38px 1fr; }
-    .ac-button { grid-column: 2; grid-row: auto; width: 100%; }
-  }
-</style>

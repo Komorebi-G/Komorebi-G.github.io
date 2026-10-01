@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import "../styles/prose.css";
 import "katex/dist/katex.min.css";
 
 export interface Props {
@@ -13,8 +14,10 @@ const {
   title,
   description,
   ogImage = "/images/og-default.png",
-  themeColor = "#050816",
+  themeColor = "#fafbf7",
 } = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
+const socialImageUrl = ogImage ? new URL(ogImage, Astro.site ?? Astro.url) : undefined;
 ---
 
 <!doctype html>
@@ -25,30 +28,34 @@ const {
     <meta name="description" content={description} />
     <meta name="theme-color" content={themeColor} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalUrl} />
 
     <!-- Open Graph -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta property="og:url" content={canonicalUrl} />
+    {socialImageUrl && <meta property="og:image" content={socialImageUrl} />}
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    {socialImageUrl && <meta name="twitter:image" content={socialImageUrl} />}
 
     <title>{title}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.setAttribute('media', 'all')"
     />
   </head>
-  <body class="min-h-screen bg-bg-primary text-text-primary antialiased overflow-x-hidden">
+  <body>
+    <a class="skip-link" href="#main-content">跳到正文</a>
     <slot />
   </body>
 </html>

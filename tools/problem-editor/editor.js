@@ -49,6 +49,7 @@ bindPreviewToggle(document.querySelector("#toggle-preview"), document.querySelec
 
 function setDirty(value) {
   dirty = value;
+  document.querySelector("#save-result").hidden = true;
   saveState.classList.toggle("dirty", value);
   saveState.classList.toggle("saved", !value);
   saveStateText.textContent = value ? "有未保存的修改" : originalId ? "已保存" : "尚未修改";
@@ -174,6 +175,19 @@ function fillForm(problem, isExisting = false, restored = false) {
   state.reset(restored);
   document.querySelector("#statement-details").open = Boolean(fields.statement.value);
   renderProblemList();
+  updateRecordLinks();
+}
+
+function updateRecordLinks() {
+  const link = document.querySelector("#view-problem");
+  link.hidden = !originalId;
+  if (originalId) {
+    const href = `/problems/${encodeURIComponent(originalId)}`;
+    link.href = href;
+    document.querySelector("#saved-problem-link").href = href;
+    document.querySelector("#related-topic-link").href = `/topic-editor/?tag=${encodeURIComponent([...selectedTags][0] || "")}`;
+  }
+  history.replaceState(null, "", location.pathname + (originalId ? `?id=${encodeURIComponent(originalId)}` : ""));
 }
 
 function newProblem(restoreDraft = true) {
@@ -248,7 +262,9 @@ async function saveProblem() {
       originalId = result.id;
       editorTitle.textContent = "编辑题目";
     });
-    toast(saved.clean ? "已保存，可以继续记录下一道题" : "已保存，刚刚输入的内容仍在草稿中");
+    updateRecordLinks();
+    document.querySelector("#save-result").hidden = !saved.clean;
+    toast(saved.clean ? "题目已保存" : "已保存，刚刚输入的内容仍在草稿中");
     await refreshProblems().catch(() => toast("内容已保存，列表刷新失败，请稍后重试", true));
   } catch (error) {
     toast(error.message, true);
@@ -327,6 +343,7 @@ tagInput.addEventListener("keydown", (event) => {
 tagInput.addEventListener("blur", () => setTimeout(() => { suggestionsNode.hidden = true; }, 100));
 listSearch.addEventListener("input", renderProblemList);
 saveButton.addEventListener("click", saveProblem);
+document.querySelector("#write-next").addEventListener("click", () => newProblem());
 document.querySelector("#new-problem").addEventListener("click", () => {
   newProblem();
 });

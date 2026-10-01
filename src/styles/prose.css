@@ -1,0 +1,19 @@
+.prose { min-width: 0; color: #354033; font: 15px/1.95 "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; overflow-wrap: anywhere; }
+.prose h2 { margin: 38px 0 16px; color: #2d432f; font-size: 23px; line-height: 1.5; font-weight: 600; }
+.prose h2:first-child { margin-top: 0; }
+.prose h3 { margin: 30px 0 12px; color: #344733; font-size: 18px; line-height: 1.6; font-weight: 600; }
+.prose h4 { margin: 24px 0 10px; font-size: 16px; font-weight: 600; }
+.prose p { margin: 0 0 18px; }
+.prose ul, .prose ol { margin: 14px 0 20px; padding-left: 1.5em; list-style: revert; }
+.prose li { margin: 6px 0; }
+.prose a { color: #3d6540; text-underline-offset: 3px; }
+.prose code { padding: 2px 5px; color: #385736; background: #eef2e8; border-radius: 4px; font: .88em/1.7 "JetBrains Mono", Consolas, monospace; }
+.prose pre { max-width: 100%; margin: 22px 0; padding: 20px; overflow: auto; color: #24292f; background: #fff !important; border: 1px solid #dfe5d8; border-radius: 7px; font: 13px/1.8 "JetBrains Mono", Consolas, monospace; }
+.prose pre code { padding: 0; background: transparent; font: inherit; }
+.prose blockquote { margin: 24px 0; padding: 2px 0 2px 18px; color: #607058; border-left: 2px solid #9aad8d; }
+.prose table { display: block; width: 100%; margin: 22px 0; overflow-x: auto; border-collapse: collapse; font-size: 14px; line-height: 1.7; }
+.prose th, .prose td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #dfe5d8; }
+.prose th { color: #3d5137; background: #edf1e7; font-weight: 600; }
+.prose .katex-display { max-width: 100%; padding: 7px 0; overflow-x: auto; overflow-y: hidden; }
+.prose img { max-width: 100%; height: auto; }
+.prose hr { margin: 30px 0; border: 0; border-top: 1px solid #dfe5d8; }

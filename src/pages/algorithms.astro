@@ -11,9 +11,9 @@ import { demos } from "../data/demos.mjs";
 >
   <div class="page">
     <Navbar />
-    <main>
+    <main id="main-content">
       <header class="page-header">
-        <a href="/" class="back">← 返回首页</a>
+        <p class="eyebrow">PROJECTS / 课程项目</p>
         <h1>算法课程演示</h1>
         <p>将算法的执行轨迹做成可暂停、回放和比较的交互页面。</p>
       </header>
@@ -32,10 +32,7 @@ import { demos } from "../data/demos.mjs";
         ))}
       </section>
 
-      <aside class="source-note">
-        <strong>数据来源</strong>
-        <p>演示文件同步自 <code>~/courses/Algorithm/</code>。实验 2 使用 HTML + JSONL；实验 3–6 使用 HTML + 内嵌轨迹数据的 JavaScript 文件。</p>
-      </aside>
+
     </main>
 
     <footer><span>Algorithm Design & Analysis</span><span>{demos.length} demonstrations</span></footer>
@@ -43,36 +40,23 @@ import { demos } from "../data/demos.mjs";
 </BaseLayout>
 
 <style>
-  :global(body) { background: #f7f7f4; color: #222320; }
-  .page { min-height: 100vh; }
-  main { width: min(960px, calc(100% - 48px)); margin: 0 auto; padding: 86px 0 120px; }
-  .page-header { max-width: 700px; margin-bottom: 80px; }
-  .back { display: inline-block; margin-bottom: 48px; color: #777871; font-size: 13px; text-decoration: none; }
-  .back:hover { color: #222320; }
-  h1 { margin: 0; font-size: clamp(42px, 6.4vw, 68px); line-height: 1.1; letter-spacing: -.05em; font-weight: 650; }
-  .page-header p { margin: 24px 0 0; color: #686962; font: 400 17px/1.8 "Noto Serif SC", serif; }
-  .demo-list { border-top: 1px solid #cfcfc9; }
-  .demo { display: grid; grid-template-columns: 44px minmax(180px,.8fr) 1.2fr 24px; gap: 22px; align-items: center; min-height: 132px; padding: 25px 8px; color: inherit; border-bottom: 1px solid #d9d9d3; text-decoration: none; transition: background .2s ease, padding .2s ease; }
-  .demo:hover { padding-inline: 18px; background: #efefea; }
-  .index { align-self: start; padding-top: 5px; color: #94958e; font: 11px/1 "IBM Plex Mono", monospace; }
-  .name { display: flex; flex-direction: column; gap: 7px; }
-  .name strong { font-size: 25px; line-height: 1.1; letter-spacing: -.03em; }
-  .name small { color: #85867f; font: 11px/1 "IBM Plex Mono", monospace; }
-  .description { color: #686962; font: 400 14px/1.75 "Noto Serif SC", serif; }
-  .arrow { font-size: 19px; transition: transform .2s ease; }
-  .demo:hover .arrow { transform: translateX(4px); }
-  .source-note { margin-top: 64px; padding: 24px 26px; color: #666760; background: #efefea; border-radius: 10px; }
-  .source-note strong { color: #33342f; font-size: 13px; }
-  .source-note p { margin: 8px 0 0; font-size: 13px; line-height: 1.75; }
-  code { font-family: "IBM Plex Mono", monospace; font-size: .92em; }
-  footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #8b8c85; border-top: 1px solid #deddd8; font-size: 12px; }
-  @media (max-width: 700px) {
-    main, footer { width: min(100% - 32px, 960px); }
-    main { padding: 60px 0 80px; }
-    .page-header { margin-bottom: 56px; }
-    .back { margin-bottom: 36px; }
-    .demo { grid-template-columns: 32px 1fr 24px; min-height: 112px; gap: 12px; }
-    .description { display: none; }
-    .name strong { font-size: 22px; }
-  }
+
+  main { width: min(1040px, calc(100% - 112px)); margin: 0 auto; padding: 45px 0 50px; }
+  .eyebrow { margin: 0 0 25px; color: #64725b; font: 12px/1.4 "IBM Plex Mono", monospace; letter-spacing: .04em; }
+  h1 { margin: 0; color: #2d432f; font: 500 36px/1.4 "Noto Serif SC", "Songti SC", serif; }
+  .page-header p:not(.eyebrow) { margin: 14px 0 0; color: #626c5f; font-size: 14px; line-height: 1.8; }
+  .page-header { padding-bottom: 32px; }
+  .demo-list { border-top: 1px solid #dfe5d8; }
+  .demo { display: grid; grid-template-columns: 30px 1fr 1.3fr 20px; gap: 22px; align-items: center; padding: 27px 0; color: inherit; border-bottom: 1px solid #e5e9df; text-decoration: none; }
+  .index { color: #6c7c60; font: 12px/1.5 "IBM Plex Mono", monospace; }
+  .name { display: flex; flex-direction: column; gap: 9px; }
+  .name strong { color: #32492e; font-size: 19px; font-weight: 600; }
+  .name small { color: #637558; font: 12px/1.5 "IBM Plex Mono", monospace; }
+  .description { color: #626c5f; font-size: 14px; line-height: 1.8; }
+  .arrow { color: #56734b; }
+  .demo:hover strong { color: #527b3e; }
+  footer { width: min(1040px, calc(100% - 112px)); display: flex; justify-content: space-between; margin: 0 auto; padding: 22px 0 28px; color: #66745d; border-top: 1px solid #e0e5da; font-size: 12px; }
+  @media (max-width: 1100px) { main, footer { width: calc(100% - 64px); } }
+  @media (max-width: 900px) { .demo { grid-template-columns: 25px 1fr 20px; gap: 15px; } .description { grid-column: 2; grid-row: 2; } .arrow { grid-column: 3; grid-row: 1 / span 2; } }
+  @media (max-width: 760px) { main, footer { width: calc(100% - 40px); } main { padding-top: 28px; } h1 { font-size: 30px; } }
 </style>

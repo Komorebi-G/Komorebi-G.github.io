@@ -1,37 +1,66 @@
 ---
 const path = Astro.url.pathname;
-const isCurrent = (href: string) =>
-  href === "/" ? path === "/" : path.startsWith(href);
+const entries = [
+  { href: "/", label: "概览", active: path === "/" },
+  { href: "/problems", label: "题目", active: path.startsWith("/problems") && !path.startsWith("/problems/tags/") },
+  { href: "/knowledge", label: "知识点", active: path.startsWith("/knowledge") || path.startsWith("/problems/tags/") },
+  { href: "/algorithms", label: "项目", active: path.startsWith("/algorithms") },
+];
 ---
-
 <header class="site-header">
+  <a class="brand" href="/" aria-label="LBH 学习笔记首页">LBH<span>.</span></a>
+  <p class="brand-note">学习笔记</p>
   <nav aria-label="主导航">
-    <a class="brand" href="/">LBH</a>
-    <div class="links">
-      <a href="/" aria-current={isCurrent("/") ? "page" : undefined}>首页</a>
-      <a href="/problems" aria-current={isCurrent("/problems") ? "page" : undefined}>题目归档</a>
-      <a href="/training" aria-current={isCurrent("/training") ? "page" : undefined}>训练</a>
-      <a href="/algorithms" aria-current={isCurrent("/algorithms") ? "page" : undefined}>算法演示</a>
-    </div>
+    {entries.map((entry) => (
+      <a href={entry.href} aria-current={entry.active ? "page" : undefined}>
+        <span>{entry.label}</span><span class="nav-mark" aria-hidden="true">↗</span>
+      </a>
+    ))}
   </nav>
+  <div class="secondary-nav">
+    <span class="nav-caption">工具与资料</span>
+    <a href="/training" aria-current={path.startsWith("/training") ? "page" : undefined}>限时训练 <span aria-hidden="true">↗</span></a>
+    <a href="/downloads/icpc-contest-handbook.pdf" download>赛前速查册 <span aria-hidden="true">↓</span></a>
+  </div>
+  <div class="nav-footer">
+    {import.meta.env.DEV && (
+      <div class="quick-write">
+        <a class="write-primary" href="/editor/">＋ 记一题</a>
+        <a href="/topic-editor/?new=1">写知识点</a>
+      </div>
+    )}
+    <p>题解与算法笔记</p>
+  </div>
 </header>
-
 <style>
-  .site-header { position: relative; z-index: 20; width: 100%; }
-  nav { width: min(1120px, calc(100% - 48px)); height: 76px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--nav-border, #deddd8); }
-  .brand { color: var(--nav-brand, #222320); font-size: 18px; font-weight: 720; letter-spacing: -.04em; text-decoration: none; }
-  .links { display: flex; align-items: center; gap: 28px; }
-  .links a { color: var(--nav-link, #666760); font-size: 14px; text-decoration: none; transition: color .2s ease; }
-  .links a:hover { color: var(--nav-hover, #222320); }
-  .links a[aria-current="page"] { color: var(--nav-current, #253b2b); font-weight: 600; }
-  @media (max-width: 620px) {
-    nav { width: min(100% - 32px, 1120px); height: 64px; }
-    .links { gap: 14px; }
-    .links a { font-size: 12px; }
+  .site-header { position: fixed; inset: 0 auto 0 0; z-index: 30; display: flex; flex-direction: column; width: 216px; padding: 42px 24px 24px; background: #f1f2ed; border-right: 1px solid #e0e3da; }
+  .brand { width: fit-content; color: #25382e; font: 700 28px/1.2 "Space Grotesk", sans-serif; letter-spacing: -.06em; text-decoration: none; }
+  .brand span { color: #65846d; }
+  .brand-note { margin: 9px 0 44px; color: #687166; font-size: 13px; }
+  nav { display: grid; gap: 6px; }
+  nav a { display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 0 14px; color: #596157; border-radius: 7px; font-size: 14px; text-decoration: none; transition: background .15s, color .15s; }
+  nav a:hover { color: #2b4936; background: #e7ebe2; }
+  nav a[aria-current="page"] { color: #284733; background: #e1e8dc; font-weight: 600; }
+  .nav-mark { color: #68806b; font-size: 13px; opacity: 0; }
+  nav a[aria-current="page"] .nav-mark { opacity: 1; }
+  .secondary-nav { display: grid; gap: 14px; margin: 34px 14px 0; padding-top: 26px; border-top: 1px solid #dce1d6; }
+  .nav-caption { margin-bottom: 3px; color: #72796e; font-size: 12px; }
+  .secondary-nav a { display: flex; justify-content: space-between; color: #596157; font-size: 13px; text-decoration: none; }
+  .secondary-nav a:hover, .secondary-nav a[aria-current="page"] { color: #254a32; }
+  .nav-footer { margin-top: auto; padding-top: 40px; }
+  .quick-write { display: grid; gap: 8px; text-align: center; }
+  .quick-write a { padding: 10px 8px; color: #3f5b46; border: 1px solid #d2dacb; border-radius: 6px; font-size: 13px; text-decoration: none; }
+  .quick-write .write-primary { color: #fff; background: #365841; border-color: #365841; }
+  .quick-write a:hover { filter: brightness(.95); }
+  .nav-footer p { margin: 22px 0 0; color: #6d7469; font-size: 12px; text-align: center; }
+  @media (max-width: 1000px) { .site-header { width: 180px; padding-inline: 16px; } }
+  @media (max-width: 760px) {
+    .site-header { position: sticky; inset: auto; top: 0; display: grid; grid-template-columns: auto 1fr; gap: 16px; width: 100%; padding: 16px 20px; background: #f8f9f5; border-right: 0; border-bottom: 1px solid #e0e3da; }
+    .brand { align-self: center; font-size: 23px; }
+    .brand-note, .nav-footer, .secondary-nav { display: none; }
+    nav { display: flex; justify-content: flex-end; gap: 4px; }
+    nav a { min-height: 36px; padding: 0 11px; font-size: 13px; }
+    .nav-mark { display: none; }
   }
-  @media (max-width: 430px) {
-    .links { gap: 9px; }
-    .links a { font-size: 10px; }
-    .brand { font-size: 16px; }
-  }
+  @media (max-width: 380px) { .site-header { padding-inline: 14px; gap: 8px; } nav a { padding-inline: 8px; } }
 </style>

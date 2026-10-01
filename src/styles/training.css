@@ -1,0 +1,143 @@
+.training-page main { width: min(1040px, calc(100% - 112px)); margin: 0 auto; padding: 45px 0 28px; }
+.training-page .hero { padding-bottom: 30px; border-bottom: 1px solid #dfe5d8; }
+.training-page main.focus-mode > .hero { display: none; }
+.training-page .eyebrow { margin: 0 0 25px; color: #64725b; font: 12px/1.4 "IBM Plex Mono", monospace; letter-spacing: .04em; }
+.training-page h1 { margin: 0; color: #2d432f; font: 500 36px/1.4 "Noto Serif SC", "Songti SC", serif; }
+.training-page .hero-summary { margin: 14px 0 0; color: #626c5f; font-size: 14px; line-height: 1.8; }
+.training-page button { cursor: pointer; }
+.training-page button:disabled { opacity: .5; cursor: default; }
+.training-page .setup-view, .training-page .session-view, .training-page .review-view { padding-top: 28px; }
+.training-page .section-title { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+.training-page .section-title h2, .training-page .role-intro h2 { margin: 0; color: #354b30; font-size: 18px; line-height: 1.7; font-weight: 600; }
+.training-page .section-title > div > span, .training-page .role-intro > span { display: none; }
+.training-page .section-title p { margin: 8px 0 0; color: #626c5f; font-size: 13px; line-height: 1.8; }
+.training-page .section-title.compact { padding-bottom: 13px; margin-bottom: 0; border-bottom: 1px solid #dfe5d8; }
+.training-page .section-title small { margin-left: 10px; color: #64725b; font-size: 12px; font-weight: 400; }
+.training-page .local-note { color: #64725b; font-size: 12px; }
+.training-page .mode-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.training-page .mode-card { display: flex; flex-direction: column; padding: 22px; background: #fff; border: 1px solid #dfe5d8; border-radius: 7px; }
+.training-page .mode-card.recommended { border-color: #8eaa79; }
+.training-page .mode-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #65745b; font-size: 12px; }
+.training-page .mode-top b { color: #4e6e3e; font-size: 12px; }
+.training-page .mode-card h3 { margin: 22px 0 13px; color: #334c2e; font-size: 18px; line-height: 1.6; font-weight: 600; }
+.training-page .mode-card p { flex: 1; margin: 0; color: #626c5f; font-size: 13px; line-height: 1.8; }
+.training-page .mode-card dl { display: flex; gap: 28px; margin: 22px 0; }
+.training-page .mode-card dt { margin-bottom: 5px; color: #64725b; font-size: 12px; }
+.training-page .mode-card dd { margin: 0; color: #3e5335; font: 12px/1.6 "IBM Plex Mono", monospace; }
+.training-page .mode-card > button, .training-page .review-next button, .training-page .finish-button, .training-page #continue-session { display: flex; justify-content: space-between; gap: 20px; padding: 11px 15px; color: #fff; background: #365841; border: 0; border-radius: 5px; font-size: 13px; }
+.training-page .role-map { margin-top: 24px; padding: 18px 20px; background: #f0f3e9; border: 1px solid #e1e7d9; border-radius: 6px; }
+.training-page .role-map summary { color: #4c6441; font-size: 13px; cursor: pointer; }
+.training-page .role-map .role-intro { display: none; }
+.training-page .role-map ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 25px; margin: 22px 0 0; padding: 0; list-style: none; }
+.training-page .role-map li > b { display: none; }
+.training-page .role-map strong { color: #465d3c; font-size: 13px; }
+.training-page .role-map p { margin: 8px 0 0; color: #626c5f; font-size: 13px; line-height: 1.8; }
+.training-page .bank-section, .training-page .history-section { margin-top: 35px; }
+.training-page .bank-head, .training-page .bank-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .8fr) minmax(0, 1fr) 56px; align-items: center; gap: 18px; }
+.training-page .bank-head { padding: 18px 0 12px; color: #64725b; font-size: 12px; }
+.training-page .bank-row { padding: 18px 0; border-bottom: 1px solid #e5e9df; }
+.training-page .bank-contest strong { display: block; color: #3b5132; font-size: 14px; font-weight: 600; }
+.training-page .bank-contest small { display: block; margin-top: 8px; color: #65745b; font-size: 12px; line-height: 1.8; }
+.training-page .target-link { display: flex; align-items: center; gap: 9px; color: #4d6542; font-size: 12px; text-decoration: none; }
+.training-page .target-link b { padding: 6px 9px; color: #3e5d32; background: #e9f0e2; border-radius: 4px; font: 12px/1.5 "IBM Plex Mono", monospace; }
+.training-page .target-link span { line-height: 1.8; }
+.training-page .board-link { color: #4d6542; font-size: 12px; text-decoration: none; }
+.training-page .empty-history { margin: 0; padding: 20px 0; color: #626c5f; font-size: 13px; line-height: 1.8; }
+.training-page .history-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto auto; align-items: center; gap: 18px; padding: 18px 0; border-bottom: 1px solid #e5e9df; }
+.training-page .history-row time, .training-page .history-row span { color: #65745b; font-size: 12px; }
+.training-page .history-row strong { display: block; color: #3b5132; font-size: 14px; font-weight: 600; }
+.training-page .history-row span { display: block; margin-top: 8px; }
+.training-page .history-row > b { color: #48693a; font: 12px/1.5 "IBM Plex Mono", monospace; }
+.training-page .history-review { padding: 5px 0; color: #4d6542; background: transparent; border: 0; font-size: 12px; }
+.training-page .resume-card { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px; margin-bottom: 28px; background: #eef3e7; border: 1px solid #dce7d1; border-radius: 6px; }
+.training-page .resume-card h2 { margin: 0; color: #3a5430; font-size: 16px; font-weight: 600; }
+.training-page .resume-card p { margin: 10px 0 0; color: #607253; font-size: 13px; line-height: 1.8; }
+.training-page .resume-card > div:last-child { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.training-page #finish-saved-session { color: #4d6542; background: none; border: 0; font-size: 13px; }
+.training-page .upsolve-section { margin-bottom: 28px; }
+.training-page .upsolve-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 17px 0; border-bottom: 1px solid #e5e9df; }
+.training-page .upsolve-row a { color: #425e35; font-size: 14px; text-decoration: none; }
+.training-page .upsolve-row button { flex-shrink: 0; padding: 7px 11px; color: #45613b; background: #edf3e6; border: 1px solid #dce7d1; border-radius: 5px; font-size: 12px; }
+.training-page .session-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 25px; }
+.training-page .session-header p { margin: 0 0 13px; color: #65745b; font: 12px/1.5 "IBM Plex Mono", monospace; }
+.training-page .session-header h2 { margin: 0 0 12px; color: #324b2c; font-size: 27px; font-weight: 600; }
+.training-page #session-progress { color: #607653; font-size: 13px; }
+.training-page .timer-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
+.training-page .timer-wrap small { color: #65745b; font-size: 12px; }
+.training-page .timer-wrap time { color: #365841; font: 500 30px/1.2 "IBM Plex Mono", monospace; }
+.training-page .timer-wrap time.overtime { color: #9c4a35; }
+.training-page #pause-session { padding: 0; color: #4c6c3d; background: none; border: 0; font-size: 13px; }
+.training-page .contest-note { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 19px 22px; background: #edf3e6; border: 1px solid #dce7d1; border-radius: 6px; }
+.training-page .contest-note strong { color: #3f5a33; font-size: 14px; }
+.training-page .contest-note p, .training-page .contest-note > span { margin: 8px 0 0; color: #607253; font-size: 12px; line-height: 1.8; }
+.training-page .session-rule { color: #65745b; font-size: 13px; line-height: 1.8; }
+.training-page .session-problems { border: 1px solid #dfe5d8; border-radius: 6px; background: #fff; overflow: hidden; }
+.training-page .session-problem { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 20px; align-items: center; padding: 23px; border-bottom: 1px solid #e5e9df; }
+.training-page .session-problem:last-child { border: 0; }
+.training-page .problem-marker { display: grid; place-items: center; width: 35px; height: 35px; color: #48653b; background: #eaf1e3; border-radius: 5px; font: 13px/1 "IBM Plex Mono", monospace; }
+.training-page .status-solved { background: #f2f7ed; }
+.training-page .problem-copy small { color: #65745b; font-size: 12px; }
+.training-page .problem-copy strong { display: block; margin: 7px 0; color: #31482c; font-size: 16px; font-weight: 600; }
+.training-page .problem-copy span { color: #65745b; font-size: 12px; }
+.training-page .session-problem a { color: #4c6c3d; font-size: 13px; text-decoration: none; }
+.training-page .ac-button { padding: 10px 13px; color: #426339; background: #fff; border: 1px solid #c9d7bc; border-radius: 5px; font-size: 12px; }
+.training-page .ac-button[aria-pressed="true"] { color: #fff; background: #365841; }
+.training-page .session-actions { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 22px; }
+.training-page .text-button { padding: 8px 0; color: #607253; background: none; border: 0; font-size: 13px; }
+.training-page .review-header { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding-bottom: 25px; border-bottom: 1px solid #dfe5d8; }
+.training-page .review-header > p { width: 100%; margin: 0; color: #64725b; font: 12px/1.4 "IBM Plex Mono", monospace; }
+.training-page .review-score strong { color: #365841; font: 500 36px/1.3 "Space Grotesk", sans-serif; }
+.training-page .review-score span { display: block; margin-top: 8px; color: #65745b; font-size: 12px; }
+.training-page .review-conclusion h2 { margin: 0; color: #354b30; font-size: 22px; font-weight: 600; }
+.training-page .review-conclusion p { margin: 10px 0 0; color: #626c5f; font-size: 13px; line-height: 1.8; }
+.training-page .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 24px; }
+.training-page .review-focus, .training-page .review-next { padding: 22px; background: #edf2e7; border: 1px solid #dfe5d8; border-radius: 6px; }
+.training-page .review-grid span { color: #64725b; font-size: 12px; }
+.training-page .review-grid h3 { margin: 14px 0 12px; color: #3b5132; font-size: 18px; font-weight: 600; }
+.training-page .review-grid p { color: #626c5f; font-size: 13px; line-height: 1.8; }
+.training-page .review-problems-wrap { margin-top: 28px; }
+.training-page .review-problem { display: flex; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid #e5e9df; }
+.training-page .review-problem > div { flex: 1; }
+.training-page .review-problem strong { display: block; color: #3b5132; font-size: 14px; font-weight: 600; }
+.training-page .review-problem small { display: block; margin-top: 8px; color: #65745b; font-size: 12px; }
+.training-page .review-problem a, .training-page .back-dashboard { color: #4c6c3d; font-size: 13px; text-decoration: none; }
+.training-page .back-dashboard { margin-top: 24px; padding: 0; background: none; border: 0; }
+.training-page .method-note { margin-top: 30px; padding: 23px 0; border-top: 1px solid #dfe5d8; }
+.training-page .method-note strong { color: #465d3c; font-size: 13px; }
+.training-page .method-note p { margin: 10px 0; color: #626c5f; font-size: 13px; line-height: 1.8; }
+.training-page .method-note a { color: #4c6c3d; font-size: 12px; text-decoration: none; }
+.training-page .page-footer { width: min(1040px, calc(100% - 112px)); display: flex; justify-content: space-between; margin: 0 auto; padding: 22px 0 28px; color: #66745d; border-top: 1px solid #e0e5da; font-size: 12px; }
+@media (max-width: 1100px) { .training-page main, .training-page .page-footer { width: calc(100% - 64px); } .training-page .mode-grid { gap: 12px; } .training-page .mode-card { padding: 17px; } }
+@media (max-width: 950px) {
+  .training-page .mode-grid { grid-template-columns: 1fr; }
+  .training-page .mode-card h3 { margin-top: 15px; }
+  .training-page .mode-card dl { margin-block: 17px; }
+  .training-page .bank-head { display: none; }
+  .training-page .bank-row { grid-template-columns: 1fr 1fr auto; }
+  .training-page .bank-contest { grid-column: 1 / -1; }
+  .training-page .resume-card { align-items: flex-start; flex-direction: column; gap: 17px; }
+  .training-page .local-note { display: none; }
+}
+@media (max-width: 760px) {
+  .training-page main, .training-page .page-footer { width: calc(100% - 40px); }
+  .training-page main { padding-top: 28px; }
+  .training-page h1 { font-size: 30px; }
+  .training-page .section-title { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .training-page .section-title.compact { flex-direction: row; }
+  .training-page .section-title.compact > p { display: none; }
+  .training-page .section-title.compact #pending-count { display: block; }
+  .training-page .role-map ol { grid-template-columns: 1fr; gap: 17px; }
+  .training-page .session-header { flex-direction: column; gap: 18px; }
+  .training-page .timer-wrap { flex-direction: row; align-items: center; gap: 15px; flex-wrap: wrap; }
+  .training-page .timer-wrap time { font-size: 25px; }
+  .training-page .session-problem { grid-template-columns: 35px minmax(0, 1fr); gap: 16px; padding: 18px; }
+  .training-page .session-problem a { grid-column: 2; }
+  .training-page .ac-button { grid-column: 2; width: fit-content; }
+  .training-page .session-actions { flex-wrap: wrap; gap: 12px; }
+  .training-page .session-actions .finish-button { margin-left: auto; }
+  .training-page .review-grid { grid-template-columns: 1fr; }
+  .training-page .history-row { grid-template-columns: 45px minmax(0, 1fr) auto; gap: 12px; }
+  .training-page .history-review { grid-column: 2; justify-self: start; }
+  .training-page .review-problem { flex-wrap: wrap; }
+  .training-page .contest-note > span { display: none; }
+}

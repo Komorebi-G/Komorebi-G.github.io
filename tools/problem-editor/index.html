@@ -13,16 +13,19 @@
       <aside class="sidebar">
         <header>
           <div>
-            <span class="mark">LBH</span>
-            <p>Problem Editor</p>
+            <a class="mark" href="/">LBH.</a>
+            <p>题目录入</p>
           </div>
           <button id="new-problem" class="icon-button" type="button" title="新建题目（Ctrl+N）">＋ 新题</button>
         </header>
 
-        <nav class="editor-switch" aria-label="编辑器类型">
-          <a href="/editor/" aria-current="page">题目录入</a>
-          <a href="/topic-editor/">知识点</a>
+        <nav class="editor-switch" aria-label="网站导航">
+          <a href="/">概览</a>
+          <a href="/problems" aria-current="page">题目</a>
+          <a href="/knowledge">知识点</a>
+          <a href="/algorithms">项目</a>
         </nav>
+        <a class="editor-other" href="/topic-editor/?new=1">写知识点 ↗</a>
 
         <label class="list-search">
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="m13 13 4 4"/></svg>
@@ -42,6 +45,7 @@
             <span id="save-state">尚未修改</span>
           </div>
           <div class="top-actions">
+            <a id="view-problem" href="/problems" hidden>查看题解</a>
             <button id="toggle-preview" type="button" aria-expanded="false" aria-controls="preview">预览</button>
             <button id="clear-draft" type="button">放弃修改</button>
             <button id="save-problem" class="primary" type="button">
@@ -54,8 +58,13 @@
         <form id="problem-form" novalidate>
           <section class="editor-pane">
             <div class="editor-heading">
-              <p>记下思路，留给下一次的自己。</p>
+              <p>题目链接 · 解题思路 · 代码</p>
               <h1 id="editor-title">新建题目</h1>
+            </div>
+
+            <div id="save-result" class="save-result" hidden role="status">
+              <strong>题目已保存</strong>
+              <div><a id="saved-problem-link" href="/problems">查看题解 →</a><button id="write-next" type="button">继续记题 ＋</button><a id="related-topic-link" href="/topic-editor/">整理知识点 →</a></div>
             </div>
 
             <div class="problem-basics">

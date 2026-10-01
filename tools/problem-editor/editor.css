@@ -139,3 +139,49 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
   .preview-pane { padding: 24px 14px; }
   #preview { padding: 25px 20px; }
 }
+
+/* Shared notebook layout for both local editors. */
+:root { color: #293329; background: #fafbf7; }
+.sidebar { background: #f1f2ed; border-color: #e0e3da; }
+.mark { color: #25382e; text-decoration: none; font-size: 25px; }
+.sidebar header p { color: #626c5f; font: 12px/1.5 "Segoe UI", "Microsoft YaHei", sans-serif; }
+.editor-switch { grid-template-columns: repeat(4, 1fr); padding: 0; background: transparent; border: 0; }
+.editor-switch a { padding: 9px 3px; color: #58674f; font-size: 12px; }
+.editor-switch a[aria-current="page"] { color: #284733; background: #e1e8dc; box-shadow: none; }
+.editor-other { margin: 0 7px 20px; color: #526c47; font-size: 13px; text-decoration: none; }
+.icon-button { border-radius: 6px; background: #365841; font-size: 13px; }
+.topbar { background: #fafbf7; backdrop-filter: none; }
+.back-to-archive, .save-state { font-size: 12px; }
+.top-actions button, .top-actions a { font-size: 12px; }
+.top-actions a { display: inline-flex; align-items: center; padding: 0 11px; height: 36px; color: #486440; text-decoration: none; }
+.top-actions a[hidden] { display: none; }
+.top-actions .primary { background: #365841; }
+.top-actions kbd { font-size: 11px; }
+.editor-pane { padding-top: 30px; }
+.editor-heading { margin-bottom: 26px; }
+.editor-heading p { color: #627358; font: 12px/1.7 "Segoe UI", "Microsoft YaHei", sans-serif; letter-spacing: 0; }
+.editor-heading h1 { color: #2d432f; font-size: 29px; font-weight: 600; }
+.problem-item span { color: #66745d; font-size: 12px; line-height: 1.6; }
+.list-search input, .sidebar footer, .sidebar footer a { color: #626c5f; font-size: 12px; }
+.field label, .label-line label { color: #354a30; font-size: 13px; }
+.field small, .optional-fields summary span { color: #626c5f; font: 12px/1.7 "Segoe UI", "Microsoft YaHei", sans-serif; }
+.field textarea { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+.field .code-input { font-family: var(--font-code); }
+.label-line > span { color: #637358; font-size: 12px; }
+.label-line select, .selected-tag, .optional-fields summary { font-size: 12px; }
+.save-result { margin: 0 0 25px; padding: 17px 20px; background: #edf3e6; border: 1px solid #dce7d2; border-radius: 6px; }
+.save-result strong { color: #355939; font-size: 13px; font-weight: 600; }
+.save-result > div { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+.save-result a, .save-result button { padding: 0; color: #3d663a; background: none; border: 0; font-size: 13px; text-decoration: none; }
+.toast { font-size: 13px; }
+[hidden] { display: none !important; }
+@media (max-width: 980px) { .top-actions kbd { display: none; } .back-to-archive { display: none; } }
+@media (max-width: 720px) {
+  .topbar { grid-template-columns: auto minmax(0, 1fr); padding-inline: 10px; }
+  .top-actions button, .top-actions a { padding-inline: 7px; font-size: 12px; }
+  .top-actions #clear-draft { display: none; }
+  .top-actions #view-problem { padding-inline: 7px; }
+  .editor-pane { padding-top: 25px; }
+  .save-result { padding: 15px; }
+  .editor-heading h1 { font-size: 26px; }
+}

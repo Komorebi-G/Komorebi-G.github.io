@@ -1,187 +1,174 @@
 ---
+import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Navbar from "../components/Navbar.astro";
+import { formatDate, getExcerpt, getPublishedProblems, normalizeSearchText } from "../lib/problems";
+import { getPublishedTopics, getProblemsForTopic } from "../lib/tag-knowledge";
+const problems = getPublishedProblems(await getCollection("problems"));
+const topics = getPublishedTopics(await getCollection("tagKnowledge"))
+  .sort((a, b) => b.data.updatedAt.getTime() - a.data.updatedAt.getTime());
+const showEditor = import.meta.env.DEV;
 ---
-
-<BaseLayout
-  title="LBH 的个人网站"
-  description="LBH 的个人网站，整理课程项目、实验和学习记录。"
-  themeColor="#f7f7f4"
->
-  <div class="page">
-    <Navbar />
-
-    <main>
-      <section class="intro">
-        <p class="eyebrow">个人网站</p>
-        <h1>你好，我是 LBH。</h1>
-        <p class="summary">
-          这里用来整理 ICPC 题目、课程项目和学习过程。做过的题按标签与时间归档，
-          也保留算法设计课程的交互演示。
-        </p>
+<BaseLayout title="LBH · 学习笔记" description="题目归档、解题思路、算法知识点与课程交互演示。" themeColor="#fafbf7">
+  <Navbar />
+  <main id="main-content">
+    <header class="overview-header">
+      <div class="overview-meta"><span>LBH / 学习笔记</span><span>题解 / 知识点 / 交互演示</span></div>
+      <h1>题解与算法笔记</h1>
+      <p>整理做过的题目、解题思路和可复用的算法知识。</p>
+    </header>
+    <div class="search-box">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+      <input id="overview-search" type="search" placeholder="搜索题目、思路与知识点" aria-label="搜索题目、思路与知识点" autocomplete="off" />
+      <kbd aria-hidden="true">/</kbd>
+    </div>
+    {showEditor && (
+      <section class="write-actions" aria-label="开始记录">
+        <a href="/editor/" class="write-card">
+          <span class="action-symbol" aria-hidden="true">＋</span>
+          <span><strong>记一题</strong><small>留下核心思路和代码</small></span>
+          <span class="action-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a href="/topic-editor/?new=1" class="write-card">
+          <span class="action-symbol" aria-hidden="true">≡</span>
+          <span><strong>写知识点</strong><small>整理概念、板子与易错点</small></span>
+          <span class="action-arrow" aria-hidden="true">↗</span>
+        </a>
       </section>
-
-      <section class="current" aria-labelledby="current-title">
-        <div class="section-heading">
-          <h2 id="current-title">目前的内容</h2>
-          <span>03</span>
-        </div>
-
-        <div class="content-list">
-        <a class="course-card training-card" href="/training">
-          <div class="card-copy">
-            <span class="card-label">ICPC / CCPC 训练</span>
-            <h3>稳铜，冲银</h3>
-            <p>从精选题池一键组卷，限时完成；系统避开做过的题，并根据结果建议下一轮。</p>
-            <span class="open-link">开始一场专项测试 <b>→</b></span>
-          </div>
-
-          <div class="training-visual" aria-hidden="true">
-            <div class="training-head">
-              <span>BRONZE / SESSION 01</span>
-              <strong>01:47:26</strong>
-            </div>
-            <div class="training-problem solved"><b>A</b><span>Problem A</span><i>AC</i></div>
-            <div class="training-problem solved"><b>B</b><span>Problem B</span><i>AC</i></div>
-            <div class="training-problem active"><b>C</b><span>Problem C</span><i>OPEN</i></div>
-            <div class="training-problem"><b>D</b><span>Problem D</span><i>—</i></div>
-            <div class="training-foot"><span>2 / 4 AC</span><em></em></div>
-          </div>
-        </a>
-
-        <a class="course-card archive-card" href="/problems">
-          <div class="card-copy">
-            <span class="card-label">ICPC / 个人归档</span>
-            <h3>题目与思路</h3>
-            <p>按照标签和时间整理做过的题，在需要的时候快速找到思路与代码。</p>
-            <span class="open-link">打开题目归档 <b>→</b></span>
-          </div>
-
-          <div class="archive-visual" aria-hidden="true">
-            <div class="visual-search">
-              <svg viewBox="0 0 18 18"><circle cx="8" cy="8" r="4.5"/><path d="m11.5 11.5 3.5 3.5"/></svg>
-              <span>搜索题目、标签或思路</span>
-              <kbd>/</kbd>
-            </div>
-            <div class="visual-tags">
-              <span>数位 DP</span><span>前缀和</span><span>差分</span><span>图论</span>
-            </div>
-            <div class="visual-row">
-              <time>07-26</time><strong>Classy Numbers</strong><span>数位 DP</span>
-            </div>
-            <div class="visual-row faded">
-              <time>07-18</time><strong>Problem Archive</strong><span>二分</span>
-            </div>
-          </div>
-        </a>
-
-        <a class="course-card" href="/algorithms">
-          <div class="card-copy">
-            <span class="card-label">课程项目</span>
-            <h3>算法课程演示</h3>
-            <p>五个算法实验的交互可视化，包含分治、回溯、动态规划、图算法与网络流。</p>
-            <span class="open-link">查看全部演示 <b>→</b></span>
-          </div>
-
-          <div class="card-visual" aria-hidden="true">
-            <svg viewBox="0 0 480 260" role="presentation">
-              <g class="grid-lines">
-                <path d="M40 40H440M40 95H440M40 150H440M40 205H440" />
-                <path d="M80 25V235M160 25V235M240 25V235M320 25V235M400 25V235" />
-              </g>
-              <g class="route">
-                <path d="M80 205L160 150L240 165L320 95L400 40" />
-                <circle cx="80" cy="205" r="5" />
-                <circle cx="160" cy="150" r="5" />
-                <circle cx="240" cy="165" r="5" />
-                <circle cx="320" cy="95" r="5" />
-                <circle class="pulse" cx="400" cy="40" r="7" />
-              </g>
-            </svg>
-            <span>TRACE / STEP 24</span>
-          </div>
-        </a>
-        </div>
+      <section id="drafts" class="drafts" hidden aria-labelledby="draft-title">
+        <h2 id="draft-title">继续上次的记录</h2><div id="draft-list"></div>
       </section>
-    </main>
-
-    <footer>
-      <span>LBH</span>
-      <span>{new Date().getFullYear()}</span>
-    </footer>
-  </div>
+    )}
+    <p id="search-status" class="search-status" aria-live="polite" hidden></p>
+    <div class="content-columns">
+      <section class="recent-problems" aria-labelledby="recent-title">
+        <div class="section-heading"><h2 id="recent-title">最近记录 <span>{problems.length}</span></h2><a href="/problems">全部题目 →</a></div>
+        <div class="record-list">
+          {problems.map((problem, index) => (
+            <a class="record" href={`/problems/${problem.id}`} hidden={index >= 5} data-home-record data-kind="problem" data-recent={index < 5 ? "true" : "false"} data-search={normalizeSearchText([problem.data.title, problem.data.platform, ...problem.data.tags, problem.data.statement, problem.body].join(" "))}>
+              <time datetime={problem.data.solvedAt.toISOString()}>{formatDate(problem.data.solvedAt).slice(5)}</time>
+              <span class="record-copy"><strong>{problem.data.title}</strong><small>{problem.data.tags.join(" · ")}</small></span>
+              <span class="record-arrow" aria-hidden="true">↗</span>
+            </a>
+          ))}
+        </div>
+        <p class="empty" id="problem-empty" hidden={problems.length > 0}>暂无题目记录。</p>
+      </section>
+      <section class="recent-topics" aria-labelledby="topic-title">
+        <div class="section-heading"><h2 id="topic-title">知识点 <span>{topics.length}</span></h2><a href="/knowledge">知识目录 →</a></div>
+        <div class="topic-list">
+          {topics.map((topic, index) => (
+            <a class="topic-record" href={`/problems/tags/${topic.id}`} hidden={index >= 5} data-home-record data-kind="topic" data-recent={index < 5 ? "true" : "false"} data-search={normalizeSearchText([topic.data.title, ...topic.data.aliases, topic.data.summary, topic.body].join(" "))}>
+              <span class="topic-top"><strong>{topic.data.title}</strong><span>{getProblemsForTopic(topic, problems).length} 道相关题</span></span>
+              <p>{getExcerpt(topic.data.summary, 60)}</p>
+            </a>
+          ))}
+        </div>
+        <p class="empty" id="topic-empty" hidden={topics.length > 0}>还没有匹配的知识点。</p>
+      </section>
+    </div>
+    <section class="more-content" aria-label="项目与工具">
+      <a href="/algorithms"><span class="more-index">01</span><span><strong>算法交互演示</strong><small>分治、搜索、动态规划与图算法。</small></span><span aria-hidden="true">↗</span></a>
+      <a href="/training"><span class="more-index">02</span><span><strong>限时训练</strong><small>区域赛选题与计时练习。</small></span><span aria-hidden="true">↗</span></a>
+      <a href="/downloads/icpc-contest-handbook.pdf" download><span class="more-index">03</span><span><strong>赛前速查册</strong><small>题解与算法板子，随时查阅。</small></span><span aria-hidden="true">↓</span></a>
+    </section>
+    <footer><span>LBH · 学习笔记</span><span>题目归档 · 算法知识 · 课程项目</span></footer>
+  </main>
+  <script>
+    import { normalizeName } from "../lib/tags.mjs";
+    const search = document.querySelector<HTMLInputElement>("#overview-search");
+    const records = [...document.querySelectorAll<HTMLElement>("[data-home-record]")];
+    search?.addEventListener("input", () => {
+      const query = normalizeName(search.value);
+      let problems = 0, topics = 0;
+      for (const record of records) {
+        record.hidden = query ? !record.dataset.search?.includes(query) : record.dataset.recent !== "true";
+        if (!record.hidden) record.dataset.kind === "problem" ? problems++ : topics++;
+      }
+      const status = document.querySelector<HTMLElement>("#search-status");
+      if (status) { status.hidden = !query; status.textContent = `找到 ${problems} 道题目、${topics} 个知识点`; }
+      const problemEmpty = document.querySelector<HTMLElement>("#problem-empty");
+      const topicEmpty = document.querySelector<HTMLElement>("#topic-empty");
+      if (problemEmpty) { problemEmpty.hidden = problems > 0; problemEmpty.textContent = query ? "没有匹配的题目，试试其他关键词。" : "暂无题目记录。"; }
+      if (topicEmpty) topicEmpty.hidden = topics > 0;
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "/" && !(event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]"))) { event.preventDefault(); search?.focus(); }
+    });
+    const drafts = document.querySelector<HTMLElement>("#drafts");
+    const list = document.querySelector("#draft-list");
+    if (drafts && list) {
+      try {
+        for (const key of Object.keys(localStorage)) {
+          const problem = key.startsWith("problem-editor:");
+          if (!problem && !key.startsWith("topic-editor:")) continue;
+          let draft;
+          try { draft = JSON.parse(localStorage.getItem(key) ?? "null"); } catch { continue; }
+          if (!draft || !(draft.idea?.trim() || draft.content?.trim() || draft.title?.trim() || draft.tag?.trim() || draft.code?.trim())) continue;
+          const id = key.slice(problem ? "problem-editor:".length : "topic-editor:".length);
+          const link = document.createElement("a");
+          link.href = problem ? `/editor/${id === "new" ? "" : `?id=${encodeURIComponent(id)}`}` : `/topic-editor/${id === "new" ? "?new=1" : id.startsWith("tag:") ? `?tag=${encodeURIComponent(draft.tag || id.slice(4))}` : `?id=${encodeURIComponent(id)}`}`;
+          const label = document.createElement("span");
+          label.textContent = `${problem ? "题目" : "知识点"} · ${draft.title || draft.tag || "未命名草稿"}`;
+          link.append(label, document.createTextNode("继续编辑 →"));
+          list.append(link);
+        }
+        drafts.hidden = !list.children.length;
+      } catch { /* 浏览器不允许本地存储时，概览仍可正常使用。 */ }
+    }
+  </script>
 </BaseLayout>
-
 <style>
-  :global(body) { background: #f7f7f4; color: #222320; }
-  .page { min-height: 100vh; background: #f7f7f4; }
-  main { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
-  .intro { max-width: 760px; padding: clamp(96px, 14vw, 170px) 0 clamp(90px, 12vw, 145px); }
-  .eyebrow { margin: 0 0 25px; color: #7b7c75; font-size: 13px; letter-spacing: .08em; }
-  h1 { margin: 0; font-size: clamp(46px, 7vw, 84px); line-height: 1.04; letter-spacing: -.055em; font-weight: 650; }
-  .summary { max-width: 650px; margin: 32px 0 0; color: #60615b; font: 400 clamp(17px, 1.8vw, 21px)/1.8 "Noto Serif SC", serif; text-wrap: pretty; }
-  .current { padding-bottom: 110px; }
-  .section-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 0 18px; border-bottom: 1px solid #d4d4ce; }
-  .section-heading h2 { margin: 0; font-size: 14px; font-weight: 600; }
-  .section-heading span { color: #8a8b84; font: 12px/1 "IBM Plex Mono", monospace; }
-  .content-list { display: grid; gap: 24px; margin-top: 30px; }
-  .course-card { display: grid; grid-template-columns: .9fr 1.1fr; min-height: 340px; color: inherit; background: #fff; border: 1px solid #e1e1dc; border-radius: 18px; overflow: hidden; text-decoration: none; box-shadow: 0 10px 35px rgba(28,30,25,.045); transition: transform .25s ease, box-shadow .25s ease; }
-  .course-card:hover { transform: translateY(-3px); box-shadow: 0 18px 48px rgba(28,30,25,.075); }
-  .card-copy { display: flex; flex-direction: column; align-items: flex-start; padding: 48px; }
-  .card-label { color: #777972; font-size: 12px; }
-  .card-copy h3 { margin: auto 0 14px; font-size: clamp(28px, 3.4vw, 43px); line-height: 1.1; letter-spacing: -.04em; }
-  .card-copy p { max-width: 430px; margin: 0 0 28px; color: #6b6c66; font: 400 15px/1.75 "Noto Serif SC", serif; }
-  .open-link { font-size: 14px; font-weight: 600; }
-  .open-link b { display: inline-block; margin-left: 8px; transition: transform .2s ease; }
-  .course-card:hover .open-link b { transform: translateX(4px); }
-  .card-visual { position: relative; display: grid; place-items: center; min-height: 340px; background: #eef1ec; border-left: 1px solid #e1e1dc; }
-  .card-visual svg { width: min(88%, 520px); height: auto; }
-  .grid-lines { fill: none; stroke: #cfd4cd; stroke-width: 1; }
-  .route { fill: #5f7867; stroke: #5f7867; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-  .route path { fill: none; stroke-dasharray: 600; animation: draw-route 4.5s ease-in-out infinite alternate; }
-  .pulse { transform-origin: 400px 40px; animation: node-pulse 2s ease-in-out infinite; }
-  .card-visual > span { position: absolute; right: 22px; bottom: 18px; color: #858c84; font: 10px/1 "IBM Plex Mono", monospace; letter-spacing: .08em; }
-  .archive-visual { display: flex; flex-direction: column; justify-content: center; gap: 11px; padding: clamp(28px, 5vw, 58px); background: #edf1ed; border-left: 1px solid #e1e1dc; }
-  .visual-search { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; color: #858a83; background: #fff; border: 1px solid #d8ddd8; border-radius: 8px; font-size: 11px; }
-  .visual-search svg { width: 15px; fill: none; stroke: currentColor; }
-  .visual-search span { flex: 1; }
-  .visual-search kbd { display: grid; place-items: center; width: 22px; height: 22px; background: #f2f3f0; border: 1px solid #e0e2de; border-radius: 4px; font: 9px/1 "IBM Plex Mono", monospace; }
-  .visual-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .visual-tags span { padding: 6px 8px; color: #53695a; background: #dfe8e1; border-radius: 5px; font-size: 10px; }
-  .visual-row { display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; padding: 14px 4px; border-bottom: 1px solid #d6ddd7; }
-  .visual-row time { color: #92978f; font: 9px/1 "IBM Plex Mono", monospace; }
-  .visual-row strong { font-size: 13px; }
-  .visual-row > span { padding: 4px 6px; color: #637267; background: #e4ebe5; border-radius: 4px; font-size: 9px; }
-  .visual-row.faded { opacity: .55; }
-  .training-card { color: #f1f4ee; background: #18372b; border-color: #18372b; }
-  .training-card .card-label, .training-card .card-copy p { color: #aebfb3; }
-  .training-visual { display: flex; flex-direction: column; justify-content: center; padding: clamp(30px, 5vw, 58px); background: #214635; border-left: 1px solid rgba(255,255,255,.12); }
-  .training-head { display: flex; align-items: end; justify-content: space-between; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.15); }
-  .training-head span { color: #8fab99; font: 9px/1 "IBM Plex Mono", monospace; letter-spacing: .1em; }
-  .training-head strong { color: #fff; font: 500 19px/1 "IBM Plex Mono", monospace; letter-spacing: -.04em; }
-  .training-problem { display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; align-items: center; min-height: 48px; color: #789182; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 11px; }
-  .training-problem b { display: grid; place-items: center; width: 22px; height: 22px; color: #b6c6bb; background: rgba(255,255,255,.08); border-radius: 50%; font: 600 9px/1 "IBM Plex Mono", monospace; }
-  .training-problem i { color: #728b7c; font: normal 8px/1 "IBM Plex Mono", monospace; }
-  .training-problem.solved { color: #dbe5dd; }
-  .training-problem.solved b { color: #214635; background: #b7d8c0; }
-  .training-problem.solved i { color: #8fbea0; }
-  .training-problem.active { color: #fff; }
-  .training-problem.active i { color: #ff9a70; }
-  .training-foot { display: flex; align-items: center; gap: 16px; margin-top: 21px; }
-  .training-foot span { color: #c5d2c8; font: 9px/1 "IBM Plex Mono", monospace; }
-  .training-foot em { flex: 1; height: 3px; background: linear-gradient(90deg, #ff7950 50%, rgba(255,255,255,.12) 50%); border-radius: 9px; }
-  footer { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 36px; display: flex; justify-content: space-between; color: #8b8c85; border-top: 1px solid #deddd8; font-size: 12px; }
-  @keyframes draw-route { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
-  @keyframes node-pulse { 50% { transform: scale(1.45); opacity: .55; } }
-  @media (max-width: 760px) {
-    main, footer { width: min(100% - 32px, 1120px); }
-    .intro { padding: 88px 0 86px; }
-    .summary { margin-top: 24px; font-size: 16px; }
-    .current { padding-bottom: 72px; }
-    .course-card { grid-template-columns: 1fr; }
-    .card-copy { min-height: 300px; padding: 30px; }
-    .card-visual { min-height: 230px; border-top: 1px solid #e1e1dc; border-left: 0; }
-    .archive-visual { min-height: 250px; border-top: 1px solid #e1e1dc; border-left: 0; }
-    .training-visual { min-height: 270px; border-top: 1px solid rgba(255,255,255,.12); border-left: 0; }
-  }
+  main { width: min(1040px, calc(100% - 112px)); margin: 0 auto; padding: 45px 0 24px; }
+  .overview-meta { display: flex; align-items: center; justify-content: space-between; color: #687263; font-size: 12px; letter-spacing: .03em; }
+  h1 { margin: 34px 0 13px; color: #293e2d; font: 500 clamp(30px, 3.5vw, 43px)/1.4 "Noto Serif SC", "Songti SC", serif; letter-spacing: -.035em; }
+  h1 span { color: #769076; }
+  .overview-header > p { margin: 0; color: #626c5f; font-size: 14px; line-height: 1.8; }
+  .search-box { display: flex; align-items: center; gap: 14px; height: 52px; margin-top: 28px; padding: 0 17px; background: #fff; border: 1px solid #dbe1d4; border-radius: 7px; }
+  .search-box:focus-within { outline: 2px solid #b5c7aa; outline-offset: 2px; }
+  .search-box svg { flex-shrink: 0; width: 19px; fill: none; stroke: #687562; stroke-width: 1.5; }
+  .search-box input { width: 100%; min-width: 0; color: #293329; background: transparent; border: 0; outline: 0; font-size: 14px; }
+  input::placeholder { color: #71796c; }
+  kbd { padding: 3px 7px; color: #677361; background: #f3f5ef; border: 1px solid #e2e6db; border-radius: 4px; font: 12px/1.2 monospace; }
+  .write-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .write-card { display: flex; align-items: center; gap: 17px; min-height: 90px; padding: 19px 24px; color: #344b36; background: #edf1e7; border: 1px solid #e3e9dc; border-radius: 7px; text-decoration: none; transition: background .15s; }
+  .write-card + .write-card { background: #f3f3ec; border-color: #e9e9df; }
+  .write-card:hover { background: #e3ebd9; }
+  .action-symbol { color: #718369; font: 26px/1 "Space Grotesk", sans-serif; }
+  .write-card strong { display: block; margin-bottom: 6px; font-size: 15px; font-weight: 600; }
+  .write-card small { color: #5b6856; font-size: 12px; }
+  .action-arrow { margin-left: auto; color: #61775b; font-size: 18px; }
+  .content-columns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 48px; margin-top: 40px; }
+  .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #dfe5d8; }
+  h2 { margin: 0; color: #344534; font-size: 16px; font-weight: 600; }
+  h2 span { margin-left: 9px; color: #737e6d; font: 12px/1 "IBM Plex Mono", monospace; }
+  .section-heading a { color: #5e6e57; font-size: 12px; text-decoration: none; }
+  .record { display: flex; align-items: center; gap: 19px; min-height: 76px; padding: 14px 0; border-bottom: 1px solid #e8ece2; text-decoration: none; }
+  .record time { color: #697560; font: 12px/1.5 "IBM Plex Mono", monospace; }
+  .record-copy { flex: 1; min-width: 0; }
+  .record-copy strong { display: block; overflow: hidden; color: #313e2e; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .record-copy small { display: block; margin-top: 7px; color: #66735e; font-size: 12px; }
+  .record-arrow { color: #73816a; }
+  .record:hover strong, .topic-record:hover strong { color: #50783e; }
+  .topic-record { display: block; padding: 15px 0 14px; border-bottom: 1px solid #e8ece2; text-decoration: none; }
+  .topic-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .topic-top strong { color: #35492f; font-size: 14px; font-weight: 600; }
+  .topic-top > span { flex-shrink: 0; color: #66735e; font-size: 12px; }
+  .topic-record p { display: -webkit-box; overflow: hidden; margin: 8px 0 0; color: #687361; font-size: 12px; line-height: 1.7; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+  .empty { padding: 28px 0; color: #626c5f; font-size: 14px; line-height: 1.8; }
+  .more-content { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 40px; padding: 24px 0; border-top: 1px solid #dfe5d8; }
+  .more-content a { display: flex; align-items: flex-start; gap: 13px; text-decoration: none; }
+  .more-index { padding-top: 2px; color: #73816a; font: 12px/1.5 "IBM Plex Mono", monospace; }
+  .more-content strong { display: block; color: #3d5036; font-size: 13px; font-weight: 600; }
+  .more-content small { display: block; margin-top: 8px; color: #67745f; font-size: 12px; line-height: 1.8; }
+  .more-content a > span:last-child { margin-left: auto; color: #6d7d63; }
+  footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px 0 0; color: #697660; border-top: 1px solid #e5e9df; font-size: 12px; }
+  .drafts { margin-top: 24px; padding: 18px 20px; background: #f5f0e4; border: 1px solid #e9e0c8; border-radius: 7px; }
+  .drafts h2 { margin-bottom: 12px; color: #665b3e; font-size: 13px; }
+  .drafts :global(a) { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; color: #665b3e; font-size: 13px; text-decoration: none; }
+  .search-status { margin: 24px 0 -15px; color: #53694a; font-size: 13px; }
+  @media (max-width: 1100px) { main { width: calc(100% - 64px); } .content-columns { gap: 28px; } .more-content { gap: 16px; } }
+  @media (max-width: 900px) { .content-columns { grid-template-columns: 1fr; } .more-content { grid-template-columns: 1fr; gap: 22px; } }
+  @media (max-width: 760px) { main { width: calc(100% - 40px); padding-top: 27px; } .overview-meta > span:last-child { display: none; } h1 { margin-top: 23px; } .write-card { gap: 12px; padding: 16px; } .write-card small { font-size: 12px; } .content-columns { margin-top: 32px; gap: 32px; } .action-symbol { display: none; } .write-actions { gap: 10px; } .write-card strong { font-size: 14px; } .action-arrow { font-size: 14px; } footer { flex-direction: column; gap: 7px; } }
+  @media (max-width: 380px) { .write-card { padding: 13px 10px; } .action-arrow { display: none; } }
 </style>

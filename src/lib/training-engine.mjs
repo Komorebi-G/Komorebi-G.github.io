@@ -82,6 +82,19 @@ export function elapsedMilliseconds(session, now = Date.now()) {
   return Math.max(0, end - session.startedAt - (session.totalPausedMs ?? 0));
 }
 
+export function getPendingProblemIds(history = [], progress = {}) {
+  const solved = new Set(Object.entries(progress)
+    .filter(([, entry]) => entry.status === "solved")
+    .map(([id]) => id));
+  for (const session of history) {
+    for (const id of session.problemIds ?? []) {
+      if (session.statuses?.[id] === "solved") solved.add(id);
+    }
+  }
+  return [...new Set(history.flatMap((session) => session.problemIds ?? []))]
+    .filter((id) => !solved.has(id));
+}
+
 export function summarizeSession(session, bank) {
   const problemById = new Map(bank.map((problem) => [problem.id, problem]));
   const skillStats = new Map();
@@ -128,7 +141,7 @@ export function summarizeSession(session, bank) {
 
 export function recommendNext(history = []) {
   if (!history.length) {
-    return { modeId: "medal-run", title: "建议先做铜银连续测试", detail: "从同一赛站依次完成铜牌关键题和银牌差异题，限时四小时。" };
+    return { modeId: "medal-run", title: "同场两题练习", detail: "从同一赛站依次完成铜牌关键题和银牌差异题，限时四小时。" };
   }
 
   const latest = history[0];
@@ -137,25 +150,25 @@ export function recommendNext(history = []) {
 
   if (latest.modeId === "medal-run") {
     if (latest.statuses?.[latest.problemIds?.[0]] !== "solved") {
-      return { modeId: "bronze-guard", title: "建议做铜牌题专项", detail: "上一轮第一题未通过，先用单题测试继续训练这一部分。" };
+      return { modeId: "bronze-guard", title: "建议做常见题单题练习", detail: "上一轮第一题未通过，先用单题测试继续训练这一部分。" };
     }
     if (solved < total) {
-      return { modeId: "silver-break", title: "建议做银牌题专项", detail: "上一轮铜牌关键题已通过，下一轮单独完成银牌差异题。" };
+      return { modeId: "silver-break", title: "建议做差异题单题练习", detail: "上一轮铜牌关键题已通过，下一轮单独完成银牌差异题。" };
     }
-    return { modeId: "silver-break", title: "建议继续银牌题专项", detail: "上一轮两题均通过，下一轮更换赛站测试银牌差异题。" };
+    return { modeId: "silver-break", title: "建议继续差异题单题练习", detail: "上一轮两题均通过，下一轮更换赛站测试银牌差异题。" };
   }
 
   if (latest.modeId === "bronze-guard") {
     return solved === total && total > 0
-      ? { modeId: "medal-run", title: "建议做铜银连续测试", detail: "铜牌关键题已通过，下一轮测试连续完成两题。" }
-      : { modeId: "bronze-guard", title: "建议继续铜牌题专项", detail: "更换赛站，再测试一题铜牌关键题。" };
+      ? { modeId: "medal-run", title: "建议做同场两题练习", detail: "铜牌关键题已通过，下一轮测试连续完成两题。" }
+      : { modeId: "bronze-guard", title: "建议继续常见题单题练习", detail: "更换赛站，再测试一题铜牌关键题。" };
   }
 
   if (latest.modeId === "silver-break") {
     return solved === total && total > 0
-      ? { modeId: "medal-run", title: "建议做铜银连续测试", detail: "银牌差异题已通过，下一轮测试两题连续完成情况。" }
+      ? { modeId: "medal-run", title: "建议做同场两题练习", detail: "银牌差异题已通过，下一轮测试两题连续完成情况。" }
       : { modeId: "silver-break", title: "先补完当前题", detail: "完成复盘并独立复现后，再开始下一场测试。" };
   }
 
-  return { modeId: "medal-run", title: "建议做铜银连续测试", detail: "从同一场区域赛连续完成两道目标题。" };
+  return { modeId: "medal-run", title: "建议做同场两题练习", detail: "从同一场区域赛连续完成两道目标题。" };
 }
